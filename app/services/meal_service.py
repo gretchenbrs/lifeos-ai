@@ -1,0 +1,118 @@
+from app.prompts.meal_prompts import build_meal_reasoning
+from app.schemas import MealPlanRequest, MealPlanResponse
+
+
+class MealPlanningService:
+    """Simple mock service that returns a meal plan without calling an LLM."""
+
+    protein_estimates = {
+        "chicken": 31,
+        "turkey": 29,
+        "beef": 26,
+        "salmon": 25,
+        "tuna": 24,
+        "tofu": 12,
+        "eggs": 12,
+        "egg": 6,
+        "greek yogurt": 17,
+        "beans": 9,
+        "lentils": 9,
+        "rice": 4,
+        "pasta": 5,
+        "quinoa": 8,
+    }
+
+    calorie_estimates = {
+        "chicken": 165,
+        "turkey": 170,
+        "beef": 250,
+        "salmon": 208,
+        "tuna": 132,
+        "tofu": 120,
+        "eggs": 140,
+        "egg": 70,
+        "greek yogurt": 100,
+        "beans": 120,
+        "lentils": 116,
+        "rice": 205,
+        "pasta": 200,
+        "quinoa": 222,
+        "broccoli": 55,
+        "spinach": 23,
+        "bell pepper": 24,
+        "tomato": 22,
+        "avocado": 160,
+    }
+
+    def create_meal_plan(self, request: MealPlanRequest) -> MealPlanResponse:
+        normalized_ingredients = [ingredient.strip() for ingredient in request.ingredients]
+        lower_ingredients = [ingredient.lower() for ingredient in normalized_ingredients]
+
+        ingredients_to_use = normalized_ingredients[:5]
+        meal_name = self._build_meal_name(lower_ingredients)
+        missing_items = self._suggest_missing_items(lower_ingredients)
+
+        estimated_protein = self._estimate_total(lower_ingredients, self.protein_estimates)
+        estimated_calories = self._estimate_total(lower_ingredients, self.calorie_estimates)
+
+        if estimated_protein == 0:
+            estimated_protein = 18
+        if estimated_calories == 0:
+            estimated_calories = 450
+
+        reasoning = build_meal_reasoning(
+            goal=request.goal,
+            time_minutes=request.time_minutes,
+            dietary_preferences=request.dietary_preferences,
+            ingredients_to_use=ingredients_to_use,
+            missing_items=missing_items,
+        )
+
+        return MealPlanResponse(
+            meal_name=meal_name,
+            reasoning=reasoning,
+            ingredients_to_use=ingredients_to_use,
+            missing_items=missing_items,
+            estimated_protein=estimated_protein,
+            estimated_calories=estimated_calories,
+        )
+
+    def _build_meal_name(self, ingredients: list[str]) -> str:
+        if any("chicken" in ingredient for ingredient in ingredients):
+            return "Chicken Nourish Bowl"
+        if any("salmon" in ingredient or "tuna" in ingredient for ingredient in ingredients):
+            return "Protein-Packed Fish Plate"
+        if any(
+            "tofu" in ingredient or "lentil" in ingredient or "bean" in ingredient
+            for ingredient in ingredients
+        ):
+            return "Plant Protein Power Bowl"
+        if any("egg" in ingredient for ingredient in ingredients):
+            return "Quick Savory Egg Skillet"
+        return "Balanced Pantry Bowl"
+
+    def _suggest_missing_items(self, ingredients: list[str]) -> list[str]:
+        suggestions = []
+
+        if not any("garlic" in ingredient or "onion" in ingredient for ingredient in ingredients):
+            suggestions.append("garlic or onion")
+        if not any("olive oil" in ingredient or "oil" in ingredient for ingredient in ingredients):
+            suggestions.append("olive oil")
+        if not any(
+            "salt" in ingredient
+            or "pepper" in ingredient
+            or "seasoning" in ingredient
+            for ingredient in ingredients
+        ):
+            suggestions.append("basic seasoning")
+
+        return suggestions
+
+    def _estimate_total(self, ingredients: list[str], lookup: dict[str, int]) -> int:
+        total = 0
+        for ingredient in ingredients:
+            for keyword, value in lookup.items():
+                if keyword in ingredient:
+                    total += value
+                    break
+        return total
