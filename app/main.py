@@ -1,4 +1,6 @@
-from fastapi import FastAPI
+from typing import Literal
+
+from fastapi import FastAPI, HTTPException
 
 from app.schemas import HealthResponse, MealPlanRequest, MealPlanResponse
 from app.services import MealPlanningService
@@ -19,5 +21,11 @@ def health_check() -> HealthResponse:
 
 
 @app.post("/meal-plan", response_model=MealPlanResponse)
-def create_meal_plan(request: MealPlanRequest) -> MealPlanResponse:
-    return meal_planning_service.create_meal_plan(request)
+def create_meal_plan(
+    request: MealPlanRequest,
+    mode: Literal["mock", "llm"] = "mock",
+) -> MealPlanResponse:
+    try:
+        return meal_planning_service.create_meal_plan(request, mode=mode)
+    except RuntimeError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error

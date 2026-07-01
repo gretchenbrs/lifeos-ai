@@ -1,11 +1,31 @@
+from typing import Dict, List
+
 from app.prompts.meal_prompts import build_meal_reasoning
 from app.schemas import MealPlanRequest, MealPlanResponse
+from app.services.llm_service import LLMMealPlanningService
 
 
 class MealPlanningService:
+    """Switches between mock and LLM meal planning implementations."""
+
+    def __init__(self) -> None:
+        self.mock_service = MockMealPlanningService()
+        self.llm_service = LLMMealPlanningService()
+
+    def create_meal_plan(
+        self,
+        request: MealPlanRequest,
+        mode: str = "mock",
+    ) -> MealPlanResponse:
+        if mode == "llm":
+            return self.llm_service.create_meal_plan(request)
+        return self.mock_service.create_meal_plan(request)
+
+
+class MockMealPlanningService:
     """Simple mock service that returns a meal plan without calling an LLM."""
 
-    protein_estimates = {
+    protein_estimates: Dict[str, int] = {
         "chicken": 31,
         "turkey": 29,
         "beef": 26,
@@ -22,7 +42,7 @@ class MealPlanningService:
         "quinoa": 8,
     }
 
-    calorie_estimates = {
+    calorie_estimates: Dict[str, int] = {
         "chicken": 165,
         "turkey": 170,
         "beef": 250,
@@ -77,7 +97,7 @@ class MealPlanningService:
             estimated_calories=estimated_calories,
         )
 
-    def _build_meal_name(self, ingredients: list[str]) -> str:
+    def _build_meal_name(self, ingredients: List[str]) -> str:
         if any("chicken" in ingredient for ingredient in ingredients):
             return "Chicken Nourish Bowl"
         if any("salmon" in ingredient or "tuna" in ingredient for ingredient in ingredients):
@@ -91,7 +111,7 @@ class MealPlanningService:
             return "Quick Savory Egg Skillet"
         return "Balanced Pantry Bowl"
 
-    def _suggest_missing_items(self, ingredients: list[str]) -> list[str]:
+    def _suggest_missing_items(self, ingredients: List[str]) -> List[str]:
         suggestions = []
 
         if not any("garlic" in ingredient or "onion" in ingredient for ingredient in ingredients):
@@ -108,7 +128,7 @@ class MealPlanningService:
 
         return suggestions
 
-    def _estimate_total(self, ingredients: list[str], lookup: dict[str, int]) -> int:
+    def _estimate_total(self, ingredients: List[str], lookup: Dict[str, int]) -> int:
         total = 0
         for ingredient in ingredients:
             for keyword, value in lookup.items():
