@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LifeOS AI Meal Planner</title>
+    <style>
+      :root {
+        --bg: #f3efe6;
+        --bg-accent: #e7f1e8;
+        --surface: rgba(255, 252, 246, 0.86);
+        --surface-strong: #fffdf8;
+        --text: #1e2d24;
+        --muted: #5e6e64;
+        --border: rgba(30, 45, 36, 0.12);
+        --primary: #1f7a58;
+        --primary-dark: #14553d;
+        --secondary: #d96c3b;
+        --shadow: 0 24px 60px rgba(34, 50, 40, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Avenir Next", "Trebuchet MS", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, rgba(217, 108, 59, 0.18), transparent 32%),
+          radial-gradient(circle at top right, rgba(31, 122, 88, 0.16), transparent 28%),
+          linear-gradient(180deg, var(--bg) 0%, #f8f6f1 100%);
+      }
+
+      .page {
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 36px 0 48px;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 24px;
+        align-items: stretch;
+      }
+
+      .hero-card,
+      .panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 28px;
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(16px);
+      }
+
+      .hero-card {
+        padding: 36px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: rgba(31, 122, 88, 0.12);
+        color: var(--primary-dark);
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        letter-spacing: -0.03em;
+      }
+
+      h1 {
+        margin-top: 18px;
+        font-size: clamp(2.7rem, 4vw, 4.3rem);
+        line-height: 0.95;
+      }
+
+      .hero-copy {
+        margin-top: 18px;
+        max-width: 58ch;
+        color: var(--muted);
+        font-size: 1.06rem;
+        line-height: 1.7;
+      }
+
+      .hero-actions {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        margin-top: 26px;
+      }
+
+      .button,
+      button {
+        appearance: none;
+        border: none;
+        cursor: pointer;
+        border-radius: 16px;
+        padding: 14px 18px;
+        font: inherit;
+        transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+      }
+
+      .button:hover,
+      button:hover {
+        transform: translateY(-1px);
+      }
+
+      .button-primary {
+        background: var(--primary);
+        color: #fff;
+        box-shadow: 0 10px 24px rgba(31, 122, 88, 0.24);
+      }
+
+      .button-secondary {
+        background: rgba(255, 255, 255, 0.75);
+        color: var(--text);
+        border: 1px solid var(--border);
+      }
+
+      .stat-card {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+        padding: 22px;
+      }
+
+      .stat {
+        padding: 18px;
+        border-radius: 20px;
+        background: var(--surface-strong);
+        border: 1px solid var(--border);
+      }
+
+      .stat-label {
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      .stat-value {
+        margin-top: 10px;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 2rem;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 1.05fr 0.95fr;
+        gap: 24px;
+        margin-top: 24px;
+      }
+
+      .panel {
+        padding: 26px;
+      }
+
+      .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+
+      .panel-subtitle {
+        color: var(--muted);
+        font-size: 0.95rem;
+        line-height: 1.6;
+      }
+
+      .grid {
+        display: grid;
+        gap: 16px;
+      }
+
+      .grid.two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      label {
+        display: block;
+        font-size: 0.94rem;
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+
+      input,
+      textarea,
+      select {
+        width: 100%;
+        border-radius: 16px;
+        border: 1px solid rgba(30, 45, 36, 0.14);
+        background: rgba(255, 255, 255, 0.88);
+        padding: 14px 15px;
+        font: inherit;
+        color: var(--text);
+        outline: none;
+        transition: border-color 160ms ease, box-shadow 160ms ease;
+      }
+
+      input:focus,
+      textarea:focus,
+      select:focus {
+        border-color: rgba(31, 122, 88, 0.5);
+        box-shadow: 0 0 0 4px rgba(31, 122, 88, 0.12);
+      }
+
+      textarea {
+        min-height: 118px;
+        resize: vertical;
+      }
+
+      .hint {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 0.84rem;
+        line-height: 1.5;
+      }
+
+      .actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+      }
+
+      .status {
+        margin-top: 18px;
+        border-radius: 18px;
+        padding: 14px 16px;
+        font-size: 0.95rem;
+        line-height: 1.6;
+        border: 1px solid transparent;
+        display: none;
+      }
+
+      .status.show {
+        display: block;
+      }
+
+      .status.info {
+        background: rgba(31, 122, 88, 0.1);
+        border-color: rgba(31, 122, 88, 0.18);
+        color: var(--primary-dark);
+      }
+
+      .status.error {
+        background: rgba(217, 108, 59, 0.12);
+        border-color: rgba(217, 108, 59, 0.2);
+        color: #8f3b17;
+      }
+
+      .results {
+        display: grid;
+        gap: 14px;
+      }
+
+      .result-card {
+        border-radius: 22px;
+        background: var(--surface-strong);
+        border: 1px solid var(--border);
+        padding: 18px;
+      }
+
+      .result-title {
+        font-size: 0.83rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .result-value {
+        margin-top: 10px;
+        line-height: 1.7;
+      }
+
+      .chip-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .chip {
+        border-radius: 999px;
+        padding: 8px 12px;
+        background: rgba(31, 122, 88, 0.1);
+        color: var(--primary-dark);
+        font-size: 0.92rem;
+      }
+
+      .metric-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .metric {
+        border-radius: 18px;
+        padding: 16px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(240, 248, 243, 0.9));
+        border: 1px solid var(--border);
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 8px;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 1.6rem;
+      }
+
+      .footer-note {
+        margin-top: 14px;
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+
+      @media (max-width: 920px) {
+        .hero,
+        .layout,
+        .grid.two,
+        .metric-row {
+          grid-template-columns: 1fr;
+        }
+
+        .page {
+          width: min(100% - 20px, 1120px);
+          padding-top: 20px;
+        }
+
+        .hero-card,
+        .panel {
+          padding: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <article class="hero-card">
+          <div class="eyebrow">LifeOS AI Demo</div>
+          <h1>Plan dinner with the backend you just built.</h1>
+          <p class="hero-copy">
+            This lightweight frontend talks directly to your FastAPI backend and lets you test both
+            the stable mock mode and the real LLM mode without touching cURL or Swagger every time.
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#planner">Open Meal Planner</a>
+            <a class="button button-secondary" href="/docs" target="_blank" rel="noreferrer">API Docs</a>
+          </div>
+        </article>
+
+        <aside class="hero-card stat-card">
+          <div class="stat">
+            <div class="stat-label">Backend Status</div>
+            <div class="stat-value" id="health-status">Checking...</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Planning Modes</div>
+            <div class="stat-value">2</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Primary Endpoint</div>
+            <div class="stat-value">/meal-plan</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Workflow</div>
+            <div class="stat-value">Frontend + API</div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="layout" id="planner">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>Meal Planner</h2>
+              <p class="panel-subtitle">
+                Enter a few ingredients, choose a planning mode, and let LifeOS AI return a
+                structured meal recommendation.
+              </p>
+            </div>
+          </div>
+
+          <form id="meal-form" class="grid">
+            <div>
+              <label for="ingredients">Ingredients</label>
+              <textarea id="ingredients" name="ingredients">chicken breast, rice, broccoli</textarea>
+              <div class="hint">Use commas to separate ingredients you already have at home.</div>
+            </div>
+
+            <div class="grid two">
+              <div>
+                <label for="goal">Goal</label>
+                <input id="goal" name="goal" type="text" value="high protein dinner" />
+              </div>
+              <div>
+                <label for="time-minutes">Time (minutes)</label>
+                <input id="time-minutes" name="time_minutes" type="number" min="1" max="240" value="25" />
+              </div>
+            </div>
+
+            <div class="grid two">
+              <div>
+                <label for="dietary-preferences">Dietary Preferences</label>
+                <input
+                  id="dietary-preferences"
+                  name="dietary_preferences"
+                  type="text"
+                  value="gluten free"
+                />
+                <div class="hint">Separate multiple preferences with commas.</div>
+              </div>
+              <div>
+                <label for="mode">Mode</label>
+                <select id="mode" name="mode">
+                  <option value="mock">mock</option>
+                  <option value="llm">llm</option>
+                </select>
+                <div class="hint">Use `llm` when your OpenAI API key is configured locally.</div>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="button button-primary" type="submit">Generate Plan</button>
+              <button class="button button-secondary" type="button" id="sample-button">Load Vegetarian Sample</button>
+            </div>
+
+            <div id="status" class="status info"></div>
+          </form>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>Response</h2>
+              <p class="panel-subtitle">
+                The frontend renders the same structured fields your backend returns to clients.
+              </p>
+            </div>
+          </div>
+
+          <div class="results">
+            <article class="result-card">
+              <div class="result-title">Meal Name</div>
+              <div class="result-value" id="meal-name">No result yet.</div>
+            </article>
+
+            <article class="result-card">
+              <div class="result-title">Reasoning</div>
+              <div class="result-value" id="reasoning">
+                Submit the form to see how the planner explains its decision.
+              </div>
+            </article>
+
+            <article class="result-card">
+              <div class="result-title">Ingredients To Use</div>
+              <div class="chip-list" id="ingredients-to-use">
+                <span class="chip">waiting for response</span>
+              </div>
+            </article>
+
+            <article class="result-card">
+              <div class="result-title">Missing Items</div>
+              <div class="chip-list" id="missing-items">
+                <span class="chip">waiting for response</span>
+              </div>
+            </article>
+
+            <div class="metric-row">
+              <article class="metric">
+                Estimated Protein
+                <strong id="estimated-protein">0 g</strong>
+              </article>
+              <article class="metric">
+                Estimated Calories
+                <strong id="estimated-calories">0 kcal</strong>
+              </article>
+            </div>
+          </div>
+
+          <p class="footer-note">
+            Tip: use `mock` for fast local demos and `llm` when you want a real model-generated recommendation.
+          </p>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      const mealForm = document.getElementById("meal-form");
+      const sampleButton = document.getElementById("sample-button");
+      const statusBox = document.getElementById("status");
+
+      const mealName = document.getElementById("meal-name");
+      const reasoning = document.getElementById("reasoning");
+      const ingredientsToUse = document.getElementById("ingredients-to-use");
+      const missingItems = document.getElementById("missing-items");
+      const estimatedProtein = document.getElementById("estimated-protein");
+      const estimatedCalories = document.getElementById("estimated-calories");
+      const healthStatus = document.getElementById("health-status");
+
+      function setStatus(message, tone) {
+        statusBox.textContent = message;
+        statusBox.className = `status show ${tone}`;
+      }
+
+      function renderChips(container, values) {
+        if (!values || values.length === 0) {
+          container.innerHTML = '<span class="chip">none</span>';
+          return;
+        }
+
+        container.innerHTML = values
+          .map((value) => `<span class="chip">${value}</span>`)
+          .join("");
+      }
+
+      function parseCommaSeparatedValue(value) {
+        return value
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean);
+      }
+
+      function fillSample() {
+        document.getElementById("ingredients").value = "tofu, quinoa, spinach, chickpeas";
+        document.getElementById("goal").value = "quick vegetarian lunch";
+        document.getElementById("time-minutes").value = "15";
+        document.getElementById("dietary-preferences").value = "vegetarian, high fiber";
+        document.getElementById("mode").value = "mock";
+      }
+
+      async function checkHealth() {
+        try {
+          const response = await fetch("/health");
+          const data = await response.json();
+          healthStatus.textContent = data.status === "ok" ? "Healthy" : "Unknown";
+        } catch (error) {
+          healthStatus.textContent = "Offline";
+        }
+      }
+
+      mealForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const payload = {
+          ingredients: parseCommaSeparatedValue(document.getElementById("ingredients").value),
+          goal: document.getElementById("goal").value.trim(),
+          dietary_preferences: parseCommaSeparatedValue(
+            document.getElementById("dietary-preferences").value
+          ),
+        };
+
+        const timeMinutes = document.getElementById("time-minutes").value.trim();
+        if (timeMinutes) {
+          payload.time_minutes = Number(timeMinutes);
+        }
+
+        const mode = document.getElementById("mode").value;
+        setStatus("Generating your meal plan...", "info");
+
+        try {
+          const response = await fetch(`/meal-plan?mode=${encodeURIComponent(mode)}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            const detail = typeof data.detail === "string" ? data.detail : "Request failed.";
+            throw new Error(detail);
+          }
+
+          mealName.textContent = data.meal_name;
+          reasoning.textContent = data.reasoning;
+          renderChips(ingredientsToUse, data.ingredients_to_use);
+          renderChips(missingItems, data.missing_items);
+          estimatedProtein.textContent = `${data.estimated_protein} g`;
+          estimatedCalories.textContent = `${data.estimated_calories} kcal`;
+          setStatus(`Meal plan ready using ${mode} mode.`, "info");
+        } catch (error) {
+          setStatus(error.message || "Something went wrong while creating the meal plan.", "error");
+        }
+      });
+
+      sampleButton.addEventListener("click", fillSample);
+      checkHealth();
+    </script>
+  </body>
+</html>

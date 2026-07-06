@@ -1,11 +1,11 @@
 # LifeOS AI Backend
 
-Minimal FastAPI backend for the LifeOS AI Lifestyle Decision Assistant.
+Minimal FastAPI backend plus a lightweight built-in frontend demo for the LifeOS AI Lifestyle Decision Assistant.
 
 ## V1 Scope
 
-- Backend API only
-- No frontend
+- Backend API
+- Lightweight built-in frontend demo
 - No database
 - No RAG
 - No authentication
@@ -16,6 +16,7 @@ Minimal FastAPI backend for the LifeOS AI Lifestyle Decision Assistant.
 - `GET /health` is ready
 - `POST /meal-plan` is ready
 - `meal-plan` supports a small LLM spike through `mode=llm`
+- `/` serves a simple frontend demo page for testing the planner
 - Default behavior still uses mock logic so the backend remains easy to run locally
 
 ## Project Structure
@@ -24,6 +25,8 @@ Minimal FastAPI backend for the LifeOS AI Lifestyle Decision Assistant.
 app/
   main.py
   schemas.py
+  static/
+    index.html
   services/
     __init__.py
     meal_service.py
@@ -39,6 +42,7 @@ README.md
 
 - `app/main.py`: creates the FastAPI app and defines the API routes.
 - `app/schemas.py`: stores the Pydantic request and response models.
+- `app/static/index.html`: provides a lightweight demo frontend that calls the backend directly.
 - `app/services/meal_service.py`: chooses whether a request should use mock logic or the LLM spike.
 - `app/services/llm_service.py`: contains the real OpenAI API call for the meal-planning spike.
 - `app/prompts/meal_prompts.py`: contains both mock reasoning text helpers and the prompt-building logic for the LLM path.
@@ -65,6 +69,11 @@ uvicorn app.main:app --reload
 ```
 
 The API will be available at `http://127.0.0.1:8000`.
+
+Open these pages after the server starts:
+
+- `http://127.0.0.1:8000/` for the frontend demo
+- `http://127.0.0.1:8000/docs` for Swagger docs
 
 ## LLM Spike Setup
 
@@ -132,6 +141,15 @@ Example request:
   "dietary_preferences": ["gluten free"]
 }
 ```
+
+## Frontend Demo
+
+The built-in frontend at `/` lets you:
+
+- enter ingredients, goal, and dietary preferences
+- switch between `mock` and `llm` modes
+- submit a request without writing cURL
+- view the structured meal response in a simple UI
 
 Example response:
 

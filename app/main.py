@@ -1,9 +1,15 @@
+from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 
 from app.schemas import HealthResponse, MealPlanRequest, MealPlanResponse
 from app.services import MealPlanningService
+
+
+BASE_DIR = Path(__file__).resolve().parent
+STATIC_DIR = BASE_DIR / "static"
 
 
 app = FastAPI(
@@ -13,6 +19,11 @@ app = FastAPI(
 )
 
 meal_planning_service = MealPlanningService()
+
+
+@app.get("/", include_in_schema=False)
+def home_page() -> FileResponse:
+    return FileResponse(STATIC_DIR / "index.html")
 
 
 @app.get("/health", response_model=HealthResponse)
