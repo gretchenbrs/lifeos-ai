@@ -62,7 +62,15 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-3. Run the API locally:
+3. Create a local `.env` file:
+
+```bash
+cp .env.example .env
+```
+
+Then open `.env` and add your real OpenAI key.
+
+4. Run the API locally:
 
 ```bash
 uvicorn app.main:app --reload
@@ -77,16 +85,18 @@ Open these pages after the server starts:
 
 ## LLM Spike Setup
 
-To test the real LLM path, set your OpenAI API key before starting the server:
+The app automatically loads `.env` from the project root if it exists.
+
+Recommended `.env` values:
 
 ```bash
-export OPENAI_API_KEY="your_api_key_here"
+OPENAI_API_KEY="your_api_key_here"
 ```
 
 Optional: choose a model explicitly.
 
 ```bash
-export OPENAI_MODEL="gpt-5.5"
+OPENAI_MODEL="gpt-5.5"
 ```
 
 If you do not set `OPENAI_API_KEY`, the API still works in mock mode.

@@ -4,12 +4,15 @@ from typing import Literal
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 
+from app.config import load_local_env
 from app.schemas import HealthResponse, MealPlanRequest, MealPlanResponse
 from app.services import MealPlanningService
 
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
+
+load_local_env()
 
 
 app = FastAPI(
