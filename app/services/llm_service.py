@@ -47,7 +47,7 @@ class LLMMealPlanningService:
                 "OPENAI_API_KEY is empty. Set it to a real OpenAI API key before using mode=llm."
             )
 
-        if "你的key" in normalized_key or "your_key" in normalized_key.lower():
+        if "your_key" in normalized_key.lower():
             raise RuntimeError(
                 "OPENAI_API_KEY still looks like a placeholder. Replace it with a real OpenAI API key."
             )

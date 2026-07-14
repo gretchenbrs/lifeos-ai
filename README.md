@@ -134,9 +134,8 @@ curl -X POST "http://127.0.0.1:8000/meal-plan" \
   -H "Content-Type: application/json" \
   -d '{
     "ingredients": ["chicken breast", "rice", "broccoli"],
-    "goal": "high protein dinner",
-    "time_minutes": 25,
-    "dietary_preferences": ["gluten free"]
+    "planning_notes": "High-protein dinner, gluten free, low oil.",
+    "time_minutes": 25
   }'
 ```
 
@@ -147,9 +146,8 @@ curl -X POST "http://127.0.0.1:8000/meal-plan?mode=llm" \
   -H "Content-Type: application/json" \
   -d '{
     "ingredients": ["chicken breast", "rice", "broccoli"],
-    "goal": "high protein dinner",
-    "time_minutes": 25,
-    "dietary_preferences": ["gluten free"]
+    "planning_notes": "High-protein dinner, gluten free, low oil.",
+    "time_minutes": 25
   }'
 ```
 
@@ -157,10 +155,10 @@ Example request:
 
 ```json
 {
-  "ingredients": ["chicken breast", "rice", "broccoli"],
-  "goal": "high protein dinner",
+  "ingredients": ["chicken breast (300g)", "rice (1 bowl)", "broccoli"],
+  "planning_notes": "High-protein dinner, gluten free, low oil, avoid frying.",
   "time_minutes": 25,
-  "dietary_preferences": ["gluten free"]
+  "available_seasonings": ["salt", "black pepper", "soy sauce"]
 }
 ```
 
@@ -168,7 +166,10 @@ Example request:
 
 The built-in frontend at `/` lets you:
 
-- enter ingredients, goal, and dietary preferences
+- search a starter catalog or enter any ingredient
+- add exact or informal amounts such as `300g`, `2 pieces`, or `a handful` after adding an ingredient
+- describe goals, dietary needs, and cooking preferences in one free-text field
+- manage usual seasonings in a separate pantry dialog saved in the browser
 - switch between `mock` and `llm` modes
 - submit a request without writing cURL
 - view the structured meal response in a simple UI
@@ -178,7 +179,7 @@ Example response:
 ```json
 {
   "meal_name": "Chicken Nourish Bowl",
-  "reasoning": "This mock plan focuses on your goal of high protein dinner and uses ingredients you already have: chicken breast, rice, broccoli. It is designed to fit within about 25 minutes. It also considers these dietary preferences: gluten free. You could improve flavor or flexibility with: garlic or onion, olive oil, basic seasoning.",
+  "reasoning": "This mock plan uses ingredients you already have: chicken breast, rice, broccoli. It considers your request: High-protein dinner, gluten free, low oil. It is designed to fit within about 25 minutes. You could improve flavor or flexibility with: garlic or onion, olive oil, basic seasoning.",
   "ingredients_to_use": ["chicken breast", "rice", "broccoli"],
   "missing_items": ["garlic or onion", "olive oil", "basic seasoning"],
   "estimated_protein": 35,

@@ -229,6 +229,99 @@
         line-height: 1.5;
       }
 
+      .ingredient-builder {
+        padding: 16px;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.52);
+      }
+
+      .ingredient-entry {
+        display: grid;
+        grid-template-columns: minmax(0, 1.3fr) minmax(120px, 0.7fr) auto;
+        gap: 10px;
+        align-items: end;
+      }
+
+      .ingredient-entry label {
+        font-size: 0.78rem;
+        color: var(--muted);
+      }
+
+      .ingredient-entry button {
+        min-height: 50px;
+      }
+
+      .ingredient-list {
+        display: grid;
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .ingredient-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+        padding: 10px 10px 10px 14px;
+        border-radius: 16px;
+        background: var(--surface-strong);
+        border: 1px solid var(--border);
+      }
+
+      .ingredient-name {
+        font-weight: 650;
+      }
+
+      .remove-button {
+        width: 38px;
+        height: 38px;
+        padding: 0;
+        border-radius: 12px;
+        background: rgba(217, 108, 59, 0.1);
+        color: #8f3b17;
+      }
+
+      .empty-state {
+        padding: 12px 2px 2px;
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+
+      .pantry-action {
+        width: 100%;
+        text-align: left;
+      }
+
+      .modal[hidden] {
+        display: none;
+      }
+
+      .modal {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        background: rgba(21, 35, 27, 0.42);
+      }
+
+      .modal-card {
+        width: min(100%, 520px);
+        padding: 26px;
+        border-radius: 24px;
+        background: var(--surface-strong);
+        box-shadow: var(--shadow);
+      }
+
+      .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 18px;
+      }
+
       .actions {
         display: flex;
         gap: 12px;
@@ -344,6 +437,10 @@
         .panel {
           padding: 20px;
         }
+
+        .ingredient-entry {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
   </head>
@@ -397,32 +494,49 @@
 
           <form id="meal-form" class="grid">
             <div>
-              <label for="ingredients">Ingredients</label>
-              <textarea id="ingredients" name="ingredients">chicken breast, rice, broccoli</textarea>
-              <div class="hint">Use commas to separate ingredients you already have at home.</div>
+              <label>What ingredients do you have?</label>
+              <div class="ingredient-builder">
+                <div class="ingredient-entry">
+                  <div>
+                    <label for="ingredient-search">Search or type an ingredient</label>
+                    <input
+                      id="ingredient-search"
+                      type="text"
+                      list="ingredient-options"
+                      placeholder="Try chicken, rice, broccoli..."
+                      autocomplete="off"
+                    />
+                    <datalist id="ingredient-options"></datalist>
+                  </div>
+                  <div>
+                    <label for="ingredient-amount">Amount (optional)</label>
+                    <input id="ingredient-amount" type="text" placeholder="300g, 2 pieces, some" />
+                  </div>
+                  <button class="button button-secondary" type="button" id="add-ingredient">
+                    Add
+                  </button>
+                </div>
+                <div class="ingredient-list" id="ingredient-list"></div>
+                <div class="empty-state" id="ingredient-empty">
+                  Add at least one ingredient. Exact amounts are helpful, but never required.
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label for="planning-notes">What would you like?</label>
+              <textarea
+                id="planning-notes"
+                placeholder="For example: high-protein dinner, low oil, avoid frying, gluten free, slightly spicy."
+              ></textarea>
+              <div class="hint">Add goals, dietary needs, flavor preferences, or any other request in one place.</div>
             </div>
 
             <div class="grid two">
               <div>
-                <label for="goal">Goal</label>
-                <input id="goal" name="goal" type="text" value="high protein dinner" />
-              </div>
-              <div>
-                <label for="time-minutes">Time (minutes)</label>
-                <input id="time-minutes" name="time_minutes" type="number" min="1" max="240" value="25" />
-              </div>
-            </div>
-
-            <div class="grid two">
-              <div>
-                <label for="dietary-preferences">Dietary Preferences</label>
-                <input
-                  id="dietary-preferences"
-                  name="dietary_preferences"
-                  type="text"
-                  value="gluten free"
-                />
-                <div class="hint">Separate multiple preferences with commas.</div>
+                <label for="time-minutes">Time limit (optional)</label>
+                <input id="time-minutes" name="time_minutes" type="number" min="1" max="240" placeholder="For example: 25" />
+                <div class="hint">Leave blank when time is flexible.</div>
               </div>
               <div>
                 <label for="mode">Mode</label>
@@ -432,6 +546,13 @@
                 </select>
                 <div class="hint">Use `llm` when your OpenAI API key is configured locally.</div>
               </div>
+            </div>
+
+            <div>
+              <button class="button button-secondary pantry-action" type="button" id="open-pantry">
+                Manage pantry seasonings
+              </button>
+              <div class="hint">Saved locally and used as ingredients already available at home.</div>
             </div>
 
             <div class="actions">
@@ -499,10 +620,38 @@
       </section>
     </main>
 
+    <div class="modal" id="pantry-modal" hidden>
+      <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="pantry-title">
+        <h2 id="pantry-title">Pantry seasonings</h2>
+        <p class="panel-subtitle">Add the seasonings you usually have. They are saved only in this browser.</p>
+        <label for="seasonings">Seasonings</label>
+        <input id="seasonings" type="text" placeholder="salt, black pepper, soy sauce, olive oil" />
+        <div class="modal-actions">
+          <button class="button button-secondary" type="button" id="close-pantry">Cancel</button>
+          <button class="button button-primary" type="button" id="save-pantry">Save pantry</button>
+        </div>
+      </section>
+    </div>
+
     <script>
+      const ingredientCatalog = [
+        "chicken breast", "chicken thigh", "chicken wings", "ground turkey", "beef",
+        "salmon", "tuna", "shrimp", "eggs", "tofu", "tempeh", "chickpeas",
+        "black beans", "lentils", "rice", "brown rice", "quinoa", "pasta", "bread",
+        "potato", "sweet potato", "broccoli", "spinach", "lettuce", "tomato",
+        "cucumber", "bell pepper", "carrot", "mushroom", "onion", "garlic",
+        "avocado", "greek yogurt", "cheese", "milk", "oats"
+      ];
+
       const mealForm = document.getElementById("meal-form");
       const sampleButton = document.getElementById("sample-button");
       const statusBox = document.getElementById("status");
+      const ingredientSearch = document.getElementById("ingredient-search");
+      const ingredientAmount = document.getElementById("ingredient-amount");
+      const ingredientList = document.getElementById("ingredient-list");
+      const ingredientEmpty = document.getElementById("ingredient-empty");
+      const seasoningInput = document.getElementById("seasonings");
+      const pantryModal = document.getElementById("pantry-modal");
 
       const mealName = document.getElementById("meal-name");
       const reasoning = document.getElementById("reasoning");
@@ -512,9 +661,53 @@
       const estimatedCalories = document.getElementById("estimated-calories");
       const healthStatus = document.getElementById("health-status");
 
+      let selectedIngredients = [];
+
+      document.getElementById("ingredient-options").innerHTML = ingredientCatalog
+        .map((ingredient) => `<option value="${ingredient}"></option>`)
+        .join("");
+
+      function escapeHtml(value) {
+        const element = document.createElement("div");
+        element.textContent = value;
+        return element.innerHTML;
+      }
+
       function setStatus(message, tone) {
         statusBox.textContent = message;
         statusBox.className = `status show ${tone}`;
+      }
+
+      function parseCommaSeparatedValue(value) {
+        return value.split(",").map((item) => item.trim()).filter(Boolean);
+      }
+
+      function renderIngredientList() {
+        ingredientEmpty.style.display = selectedIngredients.length ? "none" : "block";
+        ingredientList.innerHTML = selectedIngredients.map((ingredient, index) => `
+          <div class="ingredient-row">
+            <span class="ingredient-name">${escapeHtml(ingredient.name)}${ingredient.amount ? ` · ${escapeHtml(ingredient.amount)}` : ""}</span>
+            <button class="remove-button" type="button" data-remove-index="${index}" aria-label="Remove ${escapeHtml(ingredient.name)}">&times;</button>
+          </div>
+        `).join("");
+      }
+
+      function addIngredient() {
+        const name = ingredientSearch.value.trim();
+        const amount = ingredientAmount.value.trim();
+
+        if (!name) {
+          setStatus("Type or choose an ingredient first.", "error");
+          ingredientSearch.focus();
+          return;
+        }
+
+        selectedIngredients.push({ name, amount });
+        ingredientSearch.value = "";
+        ingredientAmount.value = "";
+        statusBox.className = "status info";
+        renderIngredientList();
+        ingredientSearch.focus();
       }
 
       function renderChips(container, values) {
@@ -522,25 +715,32 @@
           container.innerHTML = '<span class="chip">none</span>';
           return;
         }
-
         container.innerHTML = values
-          .map((value) => `<span class="chip">${value}</span>`)
+          .map((value) => `<span class="chip">${escapeHtml(value)}</span>`)
           .join("");
       }
 
-      function parseCommaSeparatedValue(value) {
-        return value
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean);
+      function fillSample() {
+        selectedIngredients = [
+          { name: "tofu", amount: "1 block" },
+          { name: "quinoa", amount: "1 small bowl" },
+          { name: "spinach", amount: "a handful" },
+          { name: "chickpeas", amount: "half a can" }
+        ];
+        renderIngredientList();
+        document.getElementById("planning-notes").value =
+          "Quick vegetarian lunch, high fiber, low oil, avoid frying.";
+        document.getElementById("time-minutes").value = "15";
+        document.getElementById("mode").value = "mock";
       }
 
-      function fillSample() {
-        document.getElementById("ingredients").value = "tofu, quinoa, spinach, chickpeas";
-        document.getElementById("goal").value = "quick vegetarian lunch";
-        document.getElementById("time-minutes").value = "15";
-        document.getElementById("dietary-preferences").value = "vegetarian, high fiber";
-        document.getElementById("mode").value = "mock";
+      function loadSeasonings() {
+        seasoningInput.value = localStorage.getItem("lifeos-seasonings") || "";
+      }
+
+      function saveSeasonings() {
+        localStorage.setItem("lifeos-seasonings", seasoningInput.value.trim());
+        pantryModal.hidden = true;
       }
 
       async function checkHealth() {
@@ -553,21 +753,56 @@
         }
       }
 
+      document.getElementById("add-ingredient").addEventListener("click", addIngredient);
+      ingredientSearch.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          addIngredient();
+        }
+      });
+      ingredientAmount.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          addIngredient();
+        }
+      });
+      ingredientList.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-remove-index]");
+        if (!button) return;
+        selectedIngredients.splice(Number(button.dataset.removeIndex), 1);
+        renderIngredientList();
+      });
+      document.getElementById("open-pantry").addEventListener("click", () => {
+        pantryModal.hidden = false;
+        seasoningInput.focus();
+      });
+      document.getElementById("close-pantry").addEventListener("click", () => {
+        pantryModal.hidden = true;
+      });
+      document.getElementById("save-pantry").addEventListener("click", saveSeasonings);
+      pantryModal.addEventListener("click", (event) => {
+        if (event.target === pantryModal) pantryModal.hidden = true;
+      });
+
       mealForm.addEventListener("submit", async (event) => {
         event.preventDefault();
 
+        if (!selectedIngredients.length) {
+          setStatus("Add at least one ingredient before generating a plan.", "error");
+          ingredientSearch.focus();
+          return;
+        }
+
         const payload = {
-          ingredients: parseCommaSeparatedValue(document.getElementById("ingredients").value),
-          goal: document.getElementById("goal").value.trim(),
-          dietary_preferences: parseCommaSeparatedValue(
-            document.getElementById("dietary-preferences").value
+          ingredients: selectedIngredients.map((item) =>
+            item.amount.trim() ? `${item.name} (${item.amount.trim()})` : item.name
           ),
+          planning_notes: document.getElementById("planning-notes").value.trim(),
+          available_seasonings: parseCommaSeparatedValue(seasoningInput.value),
         };
 
         const timeMinutes = document.getElementById("time-minutes").value.trim();
-        if (timeMinutes) {
-          payload.time_minutes = Number(timeMinutes);
-        }
+        if (timeMinutes) payload.time_minutes = Number(timeMinutes);
 
         const mode = document.getElementById("mode").value;
         setStatus("Generating your meal plan...", "info");
@@ -575,12 +810,9 @@
         try {
           const response = await fetch(`/meal-plan?mode=${encodeURIComponent(mode)}`, {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
           });
-
           const data = await response.json();
 
           if (!response.ok) {
@@ -601,6 +833,8 @@
       });
 
       sampleButton.addEventListener("click", fillSample);
+      loadSeasonings();
+      renderIngredientList();
       checkHealth();
     </script>
   </body>

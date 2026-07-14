@@ -13,16 +13,19 @@ class MealPlanRequest(BaseModel):
         min_length=1,
         description="Ingredients the user already has at home.",
     )
-    goal: str = Field(..., min_length=1, description="The user's meal goal.")
+    planning_notes: str = Field(
+        default="",
+        description="Optional free-text goal, dietary needs, and cooking preferences.",
+    )
     time_minutes: Optional[int] = Field(
         default=None,
         ge=1,
         le=240,
         description="Optional time budget for the meal.",
     )
-    dietary_preferences: List[str] = Field(
+    available_seasonings: List[str] = Field(
         default_factory=list,
-        description="Optional dietary preferences such as vegetarian or high-protein.",
+        description="Seasonings the user keeps at home.",
     )
 
 

@@ -25,6 +25,21 @@ class MealPlanningService:
 class MockMealPlanningService:
     """Simple mock service that returns a meal plan without calling an LLM."""
 
+    protein_keywords = (
+        "chicken",
+        "turkey",
+        "beef",
+        "salmon",
+        "tuna",
+        "shrimp",
+        "tofu",
+        "tempeh",
+        "egg",
+        "greek yogurt",
+        "beans",
+        "lentils",
+    )
+
     protein_estimates: Dict[str, int] = {
         "chicken": 31,
         "turkey": 29,
@@ -68,12 +83,27 @@ class MockMealPlanningService:
         normalized_ingredients = [ingredient.strip() for ingredient in request.ingredients]
         lower_ingredients = [ingredient.lower() for ingredient in normalized_ingredients]
 
-        ingredients_to_use = normalized_ingredients[:5]
-        meal_name = self._build_meal_name(lower_ingredients)
-        missing_items = self._suggest_missing_items(lower_ingredients)
+        ingredients_to_use = self._select_ingredients(
+            normalized_ingredients,
+            lower_ingredients,
+            request.planning_notes,
+        )
+        lower_selected_ingredients = [ingredient.lower() for ingredient in ingredients_to_use]
+        meal_name = self._build_meal_name(lower_selected_ingredients)
+        lower_seasonings = [item.lower() for item in request.available_seasonings]
+        missing_items = self._suggest_missing_items(
+            lower_ingredients + lower_seasonings,
+            request.planning_notes,
+        )
 
-        estimated_protein = self._estimate_total(lower_ingredients, self.protein_estimates)
-        estimated_calories = self._estimate_total(lower_ingredients, self.calorie_estimates)
+        estimated_protein = self._estimate_total(
+            lower_selected_ingredients,
+            self.protein_estimates,
+        )
+        estimated_calories = self._estimate_total(
+            lower_selected_ingredients,
+            self.calorie_estimates,
+        )
 
         if estimated_protein == 0:
             estimated_protein = 18
@@ -81,11 +111,11 @@ class MockMealPlanningService:
             estimated_calories = 450
 
         reasoning = build_meal_reasoning(
-            goal=request.goal,
+            planning_notes=request.planning_notes,
             time_minutes=request.time_minutes,
-            dietary_preferences=request.dietary_preferences,
             ingredients_to_use=ingredients_to_use,
             missing_items=missing_items,
+            available_seasonings=request.available_seasonings,
         )
 
         return MealPlanResponse(
@@ -111,8 +141,43 @@ class MockMealPlanningService:
             return "Quick Savory Egg Skillet"
         return "Balanced Pantry Bowl"
 
-    def _suggest_missing_items(self, ingredients: List[str]) -> List[str]:
+    def _select_ingredients(
+        self,
+        ingredients: List[str],
+        lower_ingredients: List[str],
+        planning_notes: str,
+    ) -> List[str]:
+        """Prioritize protein ingredients when the user's request calls for it."""
+
+        if "high protein" not in planning_notes.lower():
+            return ingredients[:5]
+
+        protein_indexes = [
+            index
+            for index, ingredient in enumerate(lower_ingredients)
+            if any(keyword in ingredient for keyword in self.protein_keywords)
+        ]
+        other_indexes = [
+            index for index in range(len(ingredients)) if index not in protein_indexes
+        ]
+        selected_indexes = (protein_indexes + other_indexes)[:5]
+        return [ingredients[index] for index in selected_indexes]
+
+    def _suggest_missing_items(
+        self,
+        ingredients: List[str],
+        planning_notes: str,
+    ) -> List[str]:
         suggestions = []
+
+        needs_high_protein = "high protein" in planning_notes.lower()
+        has_protein = any(
+            keyword in ingredient
+            for ingredient in ingredients
+            for keyword in self.protein_keywords
+        )
+        if needs_high_protein and not has_protein:
+            suggestions.append("protein source such as chicken, tofu, eggs, or beans")
 
         if not any("garlic" in ingredient or "onion" in ingredient for ingredient in ingredients):
             suggestions.append("garlic or onion")
