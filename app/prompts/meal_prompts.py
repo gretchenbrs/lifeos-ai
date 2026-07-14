@@ -1,6 +1,33 @@
 from typing import Dict, List, Optional
 
-from app.schemas import MealPlanRequest
+from app.schemas import MealPlanRequest, UserProfile
+
+
+def format_profile_context(profile: Optional[UserProfile]) -> str:
+    """Converts optional profile fields into concise prompt context."""
+
+    if profile is None:
+        return "not provided"
+
+    details = []
+    if profile.fitness_goal:
+        details.append(f"fitness goal: {profile.fitness_goal}")
+    if profile.activity_level:
+        details.append(f"activity level: {profile.activity_level}")
+    if profile.height_cm:
+        details.append(f"height: {profile.height_cm:g} cm")
+    if profile.weight_kg:
+        details.append(f"weight: {profile.weight_kg:g} kg")
+    if profile.body_fat_percentage:
+        details.append(f"body fat: {profile.body_fat_percentage:g}%")
+    if profile.estimated_bmr:
+        details.append(f"estimated BMR: {profile.estimated_bmr} kcal/day")
+    if profile.dietary_preferences:
+        details.append(f"dietary preferences: {', '.join(profile.dietary_preferences)}")
+    if profile.foods_to_avoid:
+        details.append(f"foods to avoid: {', '.join(profile.foods_to_avoid)}")
+
+    return "; ".join(details) if details else "not provided"
 
 
 def build_meal_llm_messages(request: MealPlanRequest) -> List[Dict[str, str]]:
@@ -12,6 +39,7 @@ def build_meal_llm_messages(request: MealPlanRequest) -> List[Dict[str, str]]:
         else "not provided"
     )
     planning_notes = request.planning_notes or "none"
+    profile_context = format_profile_context(request.profile)
     time_minutes = str(request.time_minutes) if request.time_minutes is not None else "not provided"
 
     system_prompt = (
@@ -30,6 +58,7 @@ def build_meal_llm_messages(request: MealPlanRequest) -> List[Dict[str, str]]:
     user_prompt = (
         f"Ingredients: {', '.join(request.ingredients)}\n"
         f"Planning notes: {planning_notes}\n"
+        f"Long-term profile: {profile_context}\n"
         f"Time limit in minutes: {time_minutes}\n"
         f"Available seasonings: {available_seasonings}"
     )
@@ -46,6 +75,7 @@ def build_meal_reasoning(
     ingredients_to_use: List[str],
     missing_items: List[str],
     available_seasonings: Optional[List[str]] = None,
+    profile: Optional[UserProfile] = None,
 ) -> str:
     """Builds the mock reasoning text for the meal plan response."""
 
@@ -54,6 +84,10 @@ def build_meal_reasoning(
     if planning_notes:
         clean_notes = planning_notes.rstrip(".?!")
         parts.append(f"It considers your request: {clean_notes}.")
+
+    profile_context = format_profile_context(profile)
+    if profile_context != "not provided":
+        parts.append(f"It also considers your profile: {profile_context}.")
 
     if time_minutes is not None:
         parts.append(f"It is designed to fit within about {time_minutes} minutes.")

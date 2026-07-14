@@ -29,6 +29,11 @@ def home_page() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
 
 
+@app.get("/preferences", include_in_schema=False)
+def preferences_page() -> FileResponse:
+    return FileResponse(STATIC_DIR / "preferences.html")
+
+
 @app.get("/health", response_model=HealthResponse)
 def health_check() -> HealthResponse:
     return HealthResponse(status="ok")

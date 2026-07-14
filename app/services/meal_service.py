@@ -3,6 +3,7 @@ from typing import Dict, List
 from app.prompts.meal_prompts import build_meal_reasoning
 from app.schemas import MealPlanRequest, MealPlanResponse
 from app.services.llm_service import LLMMealPlanningService
+from app.services.nutrition_service import USDANutritionService
 
 
 class MealPlanningService:
@@ -11,6 +12,7 @@ class MealPlanningService:
     def __init__(self) -> None:
         self.mock_service = MockMealPlanningService()
         self.llm_service = LLMMealPlanningService()
+        self.nutrition_service = USDANutritionService()
 
     def create_meal_plan(
         self,
@@ -18,8 +20,18 @@ class MealPlanningService:
         mode: str = "mock",
     ) -> MealPlanResponse:
         if mode == "llm":
-            return self.llm_service.create_meal_plan(request)
-        return self.mock_service.create_meal_plan(request)
+            meal_plan = self.llm_service.create_meal_plan(request)
+        else:
+            meal_plan = self.mock_service.create_meal_plan(request)
+
+        nutrition_estimate = self.nutrition_service.estimate(request.ingredients)
+        if nutrition_estimate is not None:
+            meal_plan.estimated_protein = nutrition_estimate.protein_grams
+            meal_plan.estimated_calories = nutrition_estimate.calories
+            meal_plan.nutrition_source = "USDA FoodData Central"
+            meal_plan.nutrition_coverage = nutrition_estimate.coverage
+
+        return meal_plan
 
 
 class MockMealPlanningService:
@@ -82,18 +94,21 @@ class MockMealPlanningService:
     def create_meal_plan(self, request: MealPlanRequest) -> MealPlanResponse:
         normalized_ingredients = [ingredient.strip() for ingredient in request.ingredients]
         lower_ingredients = [ingredient.lower() for ingredient in normalized_ingredients]
+        planning_context = request.planning_notes
+        if request.profile and request.profile.fitness_goal:
+            planning_context = f"{planning_context} {request.profile.fitness_goal}"
 
         ingredients_to_use = self._select_ingredients(
             normalized_ingredients,
             lower_ingredients,
-            request.planning_notes,
+            planning_context,
         )
         lower_selected_ingredients = [ingredient.lower() for ingredient in ingredients_to_use]
         meal_name = self._build_meal_name(lower_selected_ingredients)
         lower_seasonings = [item.lower() for item in request.available_seasonings]
         missing_items = self._suggest_missing_items(
             lower_ingredients + lower_seasonings,
-            request.planning_notes,
+            planning_context,
         )
 
         estimated_protein = self._estimate_total(
@@ -116,6 +131,7 @@ class MockMealPlanningService:
             ingredients_to_use=ingredients_to_use,
             missing_items=missing_items,
             available_seasonings=request.available_seasonings,
+            profile=request.profile,
         )
 
         return MealPlanResponse(
@@ -149,7 +165,7 @@ class MockMealPlanningService:
     ) -> List[str]:
         """Prioritize protein ingredients when the user's request calls for it."""
 
-        if "high protein" not in planning_notes.lower():
+        if not self._needs_high_protein(planning_notes):
             return ingredients[:5]
 
         protein_indexes = [
@@ -170,7 +186,7 @@ class MockMealPlanningService:
     ) -> List[str]:
         suggestions = []
 
-        needs_high_protein = "high protein" in planning_notes.lower()
+        needs_high_protein = self._needs_high_protein(planning_notes)
         has_protein = any(
             keyword in ingredient
             for ingredient in ingredients
@@ -192,6 +208,10 @@ class MockMealPlanningService:
             suggestions.append("basic seasoning")
 
         return suggestions
+
+    def _needs_high_protein(self, planning_notes: str) -> bool:
+        context = planning_notes.lower()
+        return "high protein" in context or "muscle gain" in context
 
     def _estimate_total(self, ingredients: List[str], lookup: Dict[str, int]) -> int:
         total = 0

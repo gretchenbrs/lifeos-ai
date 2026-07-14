@@ -322,6 +322,80 @@
         margin-top: 18px;
       }
 
+      .pantry-entry {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+        margin-top: 16px;
+      }
+
+      .suggestion-list {
+        display: grid;
+        margin-top: 8px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: #fff;
+      }
+
+      .suggestion-list:empty {
+        display: none;
+      }
+
+      .suggestion-button {
+        padding: 11px 14px;
+        border-radius: 0;
+        background: transparent;
+        color: var(--text);
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+        box-shadow: none;
+      }
+
+      .suggestion-button:last-child {
+        border-bottom: 0;
+      }
+
+      .suggestion-button:hover {
+        background: rgba(31, 122, 88, 0.08);
+        transform: none;
+      }
+
+      .pantry-chip-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        min-height: 40px;
+        margin-top: 18px;
+      }
+
+      .pantry-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 9px 8px 12px;
+        border-radius: 999px;
+        background: rgba(31, 122, 88, 0.1);
+        color: var(--primary-dark);
+        font-size: 0.9rem;
+      }
+
+      .pantry-chip button {
+        width: 20px;
+        height: 20px;
+        padding: 0;
+        border-radius: 50%;
+        background: rgba(31, 122, 88, 0.16);
+        color: var(--primary-dark);
+        line-height: 1;
+      }
+
+      .pantry-empty {
+        color: var(--muted);
+        font-size: 0.9rem;
+        padding: 8px 0;
+      }
+
       .actions {
         display: flex;
         gap: 12px;
@@ -456,6 +530,7 @@
           </p>
           <div class="hero-actions">
             <a class="button button-primary" href="#planner">Open Meal Planner</a>
+            <a class="button button-secondary" href="/preferences">Your Preferences</a>
             <a class="button button-secondary" href="/docs" target="_blank" rel="noreferrer">API Docs</a>
           </div>
         </article>
@@ -586,6 +661,10 @@
                 Submit the form to see how the planner explains its decision.
               </div>
             </article>
+            <article class="result-card">
+              <div class="result-title">Nutrition Data</div>
+              <div class="result-value" id="nutrition-source">No result yet.</div>
+            </article>
 
             <article class="result-card">
               <div class="result-title">Ingredients To Use</div>
@@ -624,8 +703,12 @@
       <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="pantry-title">
         <h2 id="pantry-title">Pantry seasonings</h2>
         <p class="panel-subtitle">Add the seasonings you usually have. They are saved only in this browser.</p>
-        <label for="seasonings">Seasonings</label>
-        <input id="seasonings" type="text" placeholder="salt, black pepper, soy sauce, olive oil" />
+        <div class="pantry-entry">
+          <input id="seasoning-search" type="text" placeholder="Search or add a seasoning" autocomplete="off" />
+          <button class="button button-secondary" type="button" id="add-seasoning">Add</button>
+        </div>
+        <div class="suggestion-list" id="seasoning-suggestions"></div>
+        <div class="pantry-chip-list" id="pantry-chip-list"></div>
         <div class="modal-actions">
           <button class="button button-secondary" type="button" id="close-pantry">Cancel</button>
           <button class="button button-primary" type="button" id="save-pantry">Save pantry</button>
@@ -643,6 +726,17 @@
         "avocado", "greek yogurt", "cheese", "milk", "oats"
       ];
 
+      const seasoningCatalog = [
+        "allspice", "basil", "bay leaves", "black pepper", "cayenne pepper",
+        "chili flakes", "chili powder", "cinnamon", "coriander", "cumin",
+        "curry powder", "dill", "five-spice powder", "garam masala", "garlic powder",
+        "ginger", "gochujang", "hot sauce", "italian seasoning", "lemon pepper",
+        "nutmeg", "onion powder", "oregano", "paprika", "parsley", "peanut oil", "red pepper flakes",
+        "rosemary", "salt", "seasoned salt", "sesame oil", "smoked paprika",
+        "soy sauce", "sriracha", "taco seasoning", "thyme", "turmeric",
+        "vinegar", "white pepper", "worcestershire sauce", "za'atar"
+      ];
+
       const mealForm = document.getElementById("meal-form");
       const sampleButton = document.getElementById("sample-button");
       const statusBox = document.getElementById("status");
@@ -650,18 +744,23 @@
       const ingredientAmount = document.getElementById("ingredient-amount");
       const ingredientList = document.getElementById("ingredient-list");
       const ingredientEmpty = document.getElementById("ingredient-empty");
-      const seasoningInput = document.getElementById("seasonings");
+      const seasoningSearch = document.getElementById("seasoning-search");
+      const seasoningSuggestions = document.getElementById("seasoning-suggestions");
+      const pantryChipList = document.getElementById("pantry-chip-list");
       const pantryModal = document.getElementById("pantry-modal");
 
       const mealName = document.getElementById("meal-name");
       const reasoning = document.getElementById("reasoning");
       const ingredientsToUse = document.getElementById("ingredients-to-use");
       const missingItems = document.getElementById("missing-items");
-      const estimatedProtein = document.getElementById("estimated-protein");
-      const estimatedCalories = document.getElementById("estimated-calories");
+        const estimatedProtein = document.getElementById("estimated-protein");
+        const estimatedCalories = document.getElementById("estimated-calories");
+        const nutritionSource = document.getElementById("nutrition-source");
       const healthStatus = document.getElementById("health-status");
 
       let selectedIngredients = [];
+      let savedSeasonings = [];
+      let pantryDraft = [];
 
       document.getElementById("ingredient-options").innerHTML = ingredientCatalog
         .map((ingredient) => `<option value="${ingredient}"></option>`)
@@ -678,8 +777,15 @@
         statusBox.className = `status show ${tone}`;
       }
 
-      function parseCommaSeparatedValue(value) {
-        return value.split(",").map((item) => item.trim()).filter(Boolean);
+      function getSavedProfile() {
+        const stored = localStorage.getItem("lifeos-profile");
+        if (!stored) return null;
+
+        try {
+          return JSON.parse(stored);
+        } catch (error) {
+          return null;
+        }
       }
 
       function renderIngredientList() {
@@ -734,13 +840,100 @@
         document.getElementById("mode").value = "mock";
       }
 
+      function normalizeSeasoning(value) {
+        return value.trim().replace(/\s+/g, " ");
+      }
+
+      function renderPantryChips() {
+        if (!pantryDraft.length) {
+          pantryChipList.innerHTML = '<span class="pantry-empty">No saved seasonings yet.</span>';
+          return;
+        }
+
+        pantryChipList.innerHTML = pantryDraft.map((seasoning, index) => `
+          <span class="pantry-chip">
+            ${escapeHtml(seasoning)}
+            <button type="button" data-remove-seasoning="${index}" aria-label="Remove ${escapeHtml(seasoning)}">&times;</button>
+          </span>
+        `).join("");
+      }
+
+      function renderSeasoningSuggestions() {
+        const query = normalizeSeasoning(seasoningSearch.value).toLowerCase();
+        if (!query) {
+          seasoningSuggestions.innerHTML = "";
+          return;
+        }
+
+        const alreadyAdded = pantryDraft.some((item) => item.toLowerCase() === query);
+        const matches = seasoningCatalog
+          .filter((seasoning) => seasoning.includes(query))
+          .filter((seasoning) => !pantryDraft.some((item) => item.toLowerCase() === seasoning))
+          .sort((first, second) => {
+            const firstStartsWithQuery = first.startsWith(query);
+            const secondStartsWithQuery = second.startsWith(query);
+
+            if (firstStartsWithQuery !== secondStartsWithQuery) {
+              return firstStartsWithQuery ? -1 : 1;
+            }
+
+            return first.localeCompare(second);
+          })
+          .slice(0, 6);
+
+        const customOption = !alreadyAdded && !seasoningCatalog.includes(query)
+          ? [`<button class="suggestion-button" type="button" data-seasoning="${escapeHtml(seasoningSearch.value.trim())}">Add "${escapeHtml(seasoningSearch.value.trim())}"</button>`]
+          : [];
+        const suggestions = matches.map((seasoning) =>
+          `<button class="suggestion-button" type="button" data-seasoning="${escapeHtml(seasoning)}">${escapeHtml(seasoning)}</button>`
+        );
+        seasoningSuggestions.innerHTML = [...suggestions, ...customOption].join("");
+      }
+
+      function addSeasoning(value) {
+        const seasoning = normalizeSeasoning(value);
+        if (!seasoning) return;
+
+        const alreadyAdded = pantryDraft.some(
+          (item) => item.toLowerCase() === seasoning.toLowerCase()
+        );
+        if (!alreadyAdded) pantryDraft.push(seasoning);
+
+        seasoningSearch.value = "";
+        renderPantryChips();
+        renderSeasoningSuggestions();
+        seasoningSearch.focus();
+      }
+
       function loadSeasonings() {
-        seasoningInput.value = localStorage.getItem("lifeos-seasonings") || "";
+        const stored = localStorage.getItem("lifeos-seasonings");
+        if (!stored) return;
+
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) savedSeasonings = parsed.filter(Boolean);
+        } catch (error) {
+          savedSeasonings = stored.split(",").map(normalizeSeasoning).filter(Boolean);
+        }
+      }
+
+      function openPantry() {
+        pantryDraft = [...savedSeasonings];
+        seasoningSearch.value = "";
+        renderPantryChips();
+        renderSeasoningSuggestions();
+        pantryModal.hidden = false;
+        seasoningSearch.focus();
+      }
+
+      function closePantry() {
+        pantryModal.hidden = true;
       }
 
       function saveSeasonings() {
-        localStorage.setItem("lifeos-seasonings", seasoningInput.value.trim());
-        pantryModal.hidden = true;
+        savedSeasonings = [...pantryDraft];
+        localStorage.setItem("lifeos-seasonings", JSON.stringify(savedSeasonings));
+        closePantry();
       }
 
       async function checkHealth() {
@@ -772,16 +965,32 @@
         selectedIngredients.splice(Number(button.dataset.removeIndex), 1);
         renderIngredientList();
       });
-      document.getElementById("open-pantry").addEventListener("click", () => {
-        pantryModal.hidden = false;
-        seasoningInput.focus();
-      });
-      document.getElementById("close-pantry").addEventListener("click", () => {
-        pantryModal.hidden = true;
-      });
+      document.getElementById("open-pantry").addEventListener("click", openPantry);
+      document.getElementById("close-pantry").addEventListener("click", closePantry);
       document.getElementById("save-pantry").addEventListener("click", saveSeasonings);
+      document.getElementById("add-seasoning").addEventListener("click", () => {
+        addSeasoning(seasoningSearch.value);
+      });
+      seasoningSearch.addEventListener("input", renderSeasoningSuggestions);
+      seasoningSearch.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          addSeasoning(seasoningSearch.value);
+        }
+      });
+      seasoningSuggestions.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-seasoning]");
+        if (button) addSeasoning(button.dataset.seasoning);
+      });
+      pantryChipList.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-remove-seasoning]");
+        if (!button) return;
+        pantryDraft.splice(Number(button.dataset.removeSeasoning), 1);
+        renderPantryChips();
+        renderSeasoningSuggestions();
+      });
       pantryModal.addEventListener("click", (event) => {
-        if (event.target === pantryModal) pantryModal.hidden = true;
+        if (event.target === pantryModal) closePantry();
       });
 
       mealForm.addEventListener("submit", async (event) => {
@@ -798,8 +1007,11 @@
             item.amount.trim() ? `${item.name} (${item.amount.trim()})` : item.name
           ),
           planning_notes: document.getElementById("planning-notes").value.trim(),
-          available_seasonings: parseCommaSeparatedValue(seasoningInput.value),
+          available_seasonings: savedSeasonings,
         };
+
+        const profile = getSavedProfile();
+        if (profile) payload.profile = profile;
 
         const timeMinutes = document.getElementById("time-minutes").value.trim();
         if (timeMinutes) payload.time_minutes = Number(timeMinutes);
@@ -826,6 +1038,7 @@
           renderChips(missingItems, data.missing_items);
           estimatedProtein.textContent = `${data.estimated_protein} g`;
           estimatedCalories.textContent = `${data.estimated_calories} kcal`;
+          nutritionSource.textContent = `${data.nutrition_source}. ${data.nutrition_coverage}`;
           setStatus(`Meal plan ready using ${mode} mode.`, "info");
         } catch (error) {
           setStatus(error.message || "Something went wrong while creating the meal plan.", "error");
