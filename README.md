@@ -2,6 +2,8 @@
 
 Minimal FastAPI backend plus a lightweight built-in frontend demo for the LifeOS AI Lifestyle Decision Assistant.
 
+LifeOS AI is an AI lifestyle decision assistant focused on helping users make better everyday choices around meals first, with future expansion into grocery planning, travel, and other personalized planning workflows.
+
 ## V1 Scope
 
 - Backend API
@@ -18,6 +20,16 @@ Minimal FastAPI backend plus a lightweight built-in frontend demo for the LifeOS
 - `meal-plan` supports a small LLM spike through `mode=llm`
 - `/` serves a simple frontend demo page for testing the planner
 - Default behavior still uses mock logic so the backend remains easy to run locally
+
+## Why This Project
+
+This project is not meant to be a thin chat wrapper. The goal is to build a modular AI decision backend that can gradually grow into a more personalized lifestyle platform with structured user context, memory, and additional planning domains.
+
+## Next Steps
+
+- make the meal planner more reliable with better prompts and error handling
+- improve the built-in frontend demo UX
+- add a second planning capability after the meal flow feels solid
 
 ## Project Structure
 
