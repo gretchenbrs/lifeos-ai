@@ -2,24 +2,16 @@
 
 import json
 import os
-import re
 from dataclasses import dataclass
 from typing import Any, Optional
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
+from app.services.quantity_parser import QuantityParser
+
 
 FDC_BASE_URL = "https://api.nal.usda.gov/fdc/v1"
-GRAM_INGREDIENT_PATTERN = re.compile(
-    r"^\s*(?P<name>.+?)\s*\(\s*(?P<grams>\d+(?:\.\d+)?)\s*g\s*\)\s*$",
-    re.IGNORECASE,
-)
-PIECE_INGREDIENT_PATTERN = re.compile(
-    r"^\s*(?P<name>.+?)\s*\(\s*(?P<count>\d+(?:\.\d+)?)\s*"
-    r"(?:piece|pieces|pc|pcs|pic|pics)\s*\)\s*$",
-    re.IGNORECASE,
-)
 
 
 @dataclass
@@ -39,6 +31,18 @@ class USDANutritionService:
             "fdcId": 171447,
             "description": "Chicken, broilers or fryers, meat and skin, raw",
         },
+        "beef": {
+            "fdcId": 169430,
+            "description": "Beef, carcass, separable lean and fat, choice, raw",
+        },
+        "egg": {
+            "fdcId": 171287,
+            "description": "Egg, whole, raw, fresh",
+        },
+        "rice": {
+            "fdcId": 168878,
+            "description": "Rice, white, long-grain, regular, enriched, cooked",
+        },
     }
 
     undesirable_description_terms = (
@@ -50,6 +54,12 @@ class USDANutritionService:
         "seasoned",
         "prepackaged",
     )
+
+    ambiguous_piece_foods = {"chicken", "beef"}
+    preferred_portion_modifiers = {"egg": "large"}
+
+    def __init__(self) -> None:
+        self.quantity_parser = QuantityParser()
 
     def estimate(self, ingredients: list[str]) -> Optional[NutritionEstimate]:
         """Returns USDA totals for gram amounts or supported count-based amounts."""
@@ -63,11 +73,16 @@ class USDANutritionService:
         covered_items: list[str] = []
 
         for ingredient in ingredients:
-            parsed_ingredient = self._parse_gram_ingredient(ingredient)
+            parsed_ingredient = self.quantity_parser.parse_ingredient(ingredient)
             if parsed_ingredient is None:
                 continue
 
-            food_name, amount, unit = parsed_ingredient
+            food_name = parsed_ingredient.name
+            amount = parsed_ingredient.quantity
+            unit = parsed_ingredient.unit
+            if unit not in {"gram", "piece"}:
+                continue
+
             food = self._find_best_food(food_name, api_key)
             if food is None:
                 continue
@@ -75,10 +90,14 @@ class USDANutritionService:
             # A count of a broad food such as "chicken" does not identify a
             # consistent piece size. Keep the source mapping stable, but do not
             # invent a gram weight for that amount.
-            if unit == "piece" and food_name.strip().lower() in self.canonical_foods:
+            if unit == "piece" and food_name.strip().lower() in self.ambiguous_piece_foods:
                 continue
 
-            nutrients = self._get_nutrients(food["fdcId"], api_key)
+            nutrients = self._get_nutrients(food["fdcId"], api_key, food_name)
+            if not self._has_core_nutrients(nutrients):
+                # Some USDA search records cannot be retrieved from the detail
+                # endpoint, even though the search response includes nutrients.
+                nutrients = self._extract_nutrients(food)
             if nutrients is None:
                 continue
 
@@ -87,19 +106,23 @@ class USDANutritionService:
             if protein_per_100g is None or calories_per_100g is None:
                 continue
 
-            grams = amount
-            coverage_item = (
-                f"{food_name} ({amount:g}g; USDA match: {food['description']})"
-            )
             if unit == "piece":
                 reference_portion_grams = nutrients.get("reference_portion_grams")
                 if reference_portion_grams is None:
                     continue
                 grams = amount * reference_portion_grams
+                piece_label = "piece" if amount == 1 else "pieces"
                 coverage_item = (
-                    f"{food_name} ({amount:g} pieces, using a USDA reference serving "
+                    f"{food_name} ({amount:g} {piece_label}, using a USDA reference serving "
                     f"of {reference_portion_grams:g}g each; USDA match: "
                     f"{food['description']})"
+                )
+            else:
+                grams = parsed_ingredient.grams
+                if grams is None:
+                    continue
+                coverage_item = (
+                    f"{food_name} ({grams:g}g; USDA match: {food['description']})"
                 )
 
             multiplier = grams / 100
@@ -120,24 +143,6 @@ class USDANutritionService:
             calories=round(calorie_total),
             coverage=coverage,
         )
-
-    def _parse_gram_ingredient(self, ingredient: str) -> Optional[tuple[str, float, str]]:
-        match = GRAM_INGREDIENT_PATTERN.match(ingredient)
-        if match is not None:
-            name = match.group("name").strip()
-            grams = float(match.group("grams"))
-            if name and grams > 0:
-                return name, grams, "gram"
-
-        match = PIECE_INGREDIENT_PATTERN.match(ingredient)
-        if match is None:
-            return None
-
-        name = match.group("name").strip()
-        count = float(match.group("count"))
-        if not name or count <= 0:
-            return None
-        return name, count, "piece"
 
     def _find_best_food(self, food_name: str, api_key: str) -> Optional[dict[str, Any]]:
         canonical_food = self.canonical_foods.get(food_name.strip().lower())
@@ -178,7 +183,12 @@ class USDANutritionService:
         score -= sum(8 for term in self.undesirable_description_terms if term in description)
         return score
 
-    def _get_nutrients(self, fdc_id: int, api_key: str) -> Optional[dict[str, float]]:
+    def _get_nutrients(
+        self,
+        fdc_id: int,
+        api_key: str,
+        food_name: str,
+    ) -> Optional[dict[str, float]]:
         response = self._request_json(
             f"{FDC_BASE_URL}/food/{fdc_id}?api_key={quote(api_key)}",
             method="GET",
@@ -186,29 +196,54 @@ class USDANutritionService:
         if response is None:
             return None
 
-        nutrients: dict[str, float] = {}
-        for item in response.get("foodNutrients", []):
-            nutrient = item.get("nutrient", {})
-            name = nutrient.get("name") or item.get("nutrientName", "")
-            amount = item.get("amount")
-            if amount is None:
-                continue
+        nutrients = self._extract_nutrients(response)
 
-            if name == "Protein":
-                nutrients["protein"] = float(amount)
-            elif (
-                name in {"Energy", "Energy (Atwater General Factors)"}
-                and nutrient.get("unitName") == "kcal"
-            ):
-                nutrients["calories"] = float(amount)
+        portions = response.get("foodPortions", [])
+        preferred_modifier = self.preferred_portion_modifiers.get(food_name.lower())
+        if preferred_modifier:
+            portions = sorted(
+                portions,
+                key=lambda portion: portion.get("modifier", "").lower()
+                != preferred_modifier,
+            )
 
-        for portion in response.get("foodPortions", []):
+        for portion in portions:
             gram_weight = portion.get("gramWeight")
             if gram_weight:
                 nutrients["reference_portion_grams"] = float(gram_weight)
                 break
 
         return nutrients
+
+    def _extract_nutrients(self, food: dict[str, Any]) -> dict[str, float]:
+        """Reads the nutrient shapes returned by either USDA endpoint."""
+
+        nutrients: dict[str, float] = {}
+        for item in food.get("foodNutrients", []):
+            nutrient = item.get("nutrient", {})
+            name = nutrient.get("name") or item.get("nutrientName", "")
+            amount = item.get("amount", item.get("value"))
+            if amount is None:
+                continue
+
+            unit_name = nutrient.get("unitName") or item.get("unitName", "")
+
+            if name == "Protein":
+                nutrients["protein"] = float(amount)
+            elif (
+                name in {"Energy", "Energy (Atwater General Factors)"}
+                and unit_name.lower() == "kcal"
+            ):
+                nutrients["calories"] = float(amount)
+
+        return nutrients
+
+    def _has_core_nutrients(self, nutrients: Optional[dict[str, float]]) -> bool:
+        return bool(
+            nutrients
+            and nutrients.get("protein") is not None
+            and nutrients.get("calories") is not None
+        )
 
     def _request_json(
         self,

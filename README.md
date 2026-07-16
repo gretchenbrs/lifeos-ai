@@ -46,6 +46,7 @@ app/
     meal_service.py
     llm_service.py
     nutrition_service.py
+    quantity_parser.py
   prompts/
     __init__.py
     meal_prompts.py
@@ -62,6 +63,7 @@ README.md
 - `app/services/meal_service.py`: chooses whether a request should use mock logic or the LLM spike.
 - `app/services/llm_service.py`: contains the real OpenAI API call for the meal-planning spike.
 - `app/services/nutrition_service.py`: uses USDA FoodData Central for nutrition totals when an ingredient has an exact gram amount.
+- `app/services/quantity_parser.py`: normalizes clear amount formats such as `300g`, `0.3kg`, `1pc`, and `1 egg` before nutrition lookup.
 - `app/prompts/meal_prompts.py`: contains both mock reasoning text helpers and the prompt-building logic for the LLM path.
 
 ## Setup

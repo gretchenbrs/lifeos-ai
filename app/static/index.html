@@ -453,6 +453,33 @@
         line-height: 1.7;
       }
 
+      .nutrition-status {
+        display: inline-flex;
+        align-items: center;
+        margin-top: 10px;
+        border-radius: 999px;
+        padding: 7px 10px;
+        font-size: 0.82rem;
+        font-weight: 700;
+      }
+
+      .nutrition-status.usda {
+        background: rgba(31, 122, 88, 0.12);
+        color: var(--primary-dark);
+      }
+
+      .nutrition-status.mock {
+        background: rgba(217, 108, 59, 0.13);
+        color: #8f3b17;
+      }
+
+      .nutrition-coverage {
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        line-height: 1.55;
+      }
+
       .chip-list {
         display: flex;
         flex-wrap: wrap;
@@ -585,7 +612,7 @@
                   </div>
                   <div>
                     <label for="ingredient-amount">Amount (optional)</label>
-                    <input id="ingredient-amount" type="text" placeholder="300g, 2 pieces, some" />
+                    <input id="ingredient-amount" type="text" placeholder="300g, 1pc, 1 egg, some" />
                   </div>
                   <button class="button button-secondary" type="button" id="add-ingredient">
                     Add
@@ -595,6 +622,9 @@
                 <div class="empty-state" id="ingredient-empty">
                   Add at least one ingredient. Exact amounts are helpful, but never required.
                 </div>
+              </div>
+              <div class="hint">
+                Nutrition guide: <code>300g</code>, <code>0.3kg</code>, and <code>2oz</code> use USDA data. <code>1pc</code>, <code>1 piece</code>, and <code>1 egg</code> are approximate only for specific foods. Informal amounts still help meal planning, but are not included in USDA totals.
               </div>
             </div>
 
@@ -663,7 +693,10 @@
             </article>
             <article class="result-card">
               <div class="result-title">Nutrition Data</div>
-              <div class="result-value" id="nutrition-source">No result yet.</div>
+              <div class="nutrition-status mock" id="nutrition-source">Awaiting a result</div>
+              <div class="nutrition-coverage" id="nutrition-coverage">
+                Submit the form to see which ingredients were included in the estimate.
+              </div>
             </article>
 
             <article class="result-card">
@@ -753,9 +786,10 @@
       const reasoning = document.getElementById("reasoning");
       const ingredientsToUse = document.getElementById("ingredients-to-use");
       const missingItems = document.getElementById("missing-items");
-        const estimatedProtein = document.getElementById("estimated-protein");
-        const estimatedCalories = document.getElementById("estimated-calories");
-        const nutritionSource = document.getElementById("nutrition-source");
+      const estimatedProtein = document.getElementById("estimated-protein");
+      const estimatedCalories = document.getElementById("estimated-calories");
+      const nutritionSource = document.getElementById("nutrition-source");
+      const nutritionCoverage = document.getElementById("nutrition-coverage");
       const healthStatus = document.getElementById("health-status");
 
       let selectedIngredients = [];
@@ -1038,7 +1072,10 @@
           renderChips(missingItems, data.missing_items);
           estimatedProtein.textContent = `${data.estimated_protein} g`;
           estimatedCalories.textContent = `${data.estimated_calories} kcal`;
-          nutritionSource.textContent = `${data.nutrition_source}. ${data.nutrition_coverage}`;
+          const usesUsda = data.nutrition_source === "USDA FoodData Central";
+          nutritionSource.textContent = usesUsda ? "USDA FoodData Central" : "Mock estimate";
+          nutritionSource.className = `nutrition-status ${usesUsda ? "usda" : "mock"}`;
+          nutritionCoverage.textContent = data.nutrition_coverage;
           setStatus(`Meal plan ready using ${mode} mode.`, "info");
         } catch (error) {
           setStatus(error.message || "Something went wrong while creating the meal plan.", "error");
