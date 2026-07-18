@@ -127,6 +127,14 @@ OPENAI_MODEL="gpt-5.5"
 
 If you do not set `OPENAI_API_KEY`, the API still works in mock mode.
 
+## Tests
+
+Run the built-in parser and nutrition regression tests with:
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
 ## Endpoints
 
 ### `GET /health`
