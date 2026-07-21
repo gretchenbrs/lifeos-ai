@@ -34,43 +34,90 @@
           linear-gradient(180deg, var(--bg) 0%, #f8f6f1 100%);
       }
 
-      .page {
-        width: min(1120px, calc(100% - 32px));
+      .app-shell {
+        width: min(1580px, calc(100% - 48px));
         margin: 0 auto;
-        padding: 36px 0 48px;
-      }
-
-      .hero {
+        padding: 20px 0 48px;
         display: grid;
-        grid-template-columns: 1.1fr 0.9fr;
-        gap: 24px;
-        align-items: stretch;
+        grid-template-columns: 210px minmax(0, 1fr);
+        gap: 34px;
       }
 
-      .hero-card,
-      .panel {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 28px;
-        box-shadow: var(--shadow);
-        backdrop-filter: blur(16px);
+      .sidebar {
+        position: sticky;
+        top: 20px;
+        align-self: start;
+        display: grid;
+        gap: 20px;
       }
 
-      .hero-card {
-        padding: 36px;
+      .brand {
+        color: var(--text);
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 1.5rem;
+        font-weight: 700;
+        letter-spacing: -0.04em;
+        text-decoration: none;
       }
 
-      .eyebrow {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        padding: 8px 14px;
-        border-radius: 999px;
-        background: rgba(31, 122, 88, 0.12);
-        color: var(--primary-dark);
-        font-size: 13px;
-        letter-spacing: 0.08em;
+      .brand span {
+        display: block;
+        margin-top: 5px;
+        color: var(--muted);
+        font-family: "Avenir Next", "Trebuchet MS", sans-serif;
+        font-size: 0.82rem;
+        font-weight: 600;
+        letter-spacing: 0;
         text-transform: uppercase;
+      }
+
+      .sidebar-nav {
+        display: grid;
+        gap: 6px;
+      }
+
+      .sidebar-nav a {
+        border-radius: 12px;
+        color: var(--muted);
+        padding: 11px 12px;
+        text-decoration: none;
+      }
+
+      .sidebar-nav a:hover,
+      .sidebar-nav a[aria-current="page"] {
+        background: rgba(31, 122, 88, 0.1);
+        color: var(--primary-dark);
+      }
+
+      .sidebar-pantry {
+        padding: 18px;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        background: rgba(255, 252, 246, 0.58);
+      }
+
+      .sidebar-pantry-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .sidebar-pantry h2 {
+        font-family: "Avenir Next", "Trebuchet MS", sans-serif;
+        font-size: 0.9rem;
+        letter-spacing: 0;
+      }
+
+      .sidebar-pantry .button {
+        padding: 8px 10px;
+        border-radius: 10px;
+        font-size: 0.84rem;
+      }
+
+      .page {
+        min-width: 0;
+        padding: 18px 0 48px;
       }
 
       h1,
@@ -82,24 +129,18 @@
       }
 
       h1 {
-        margin-top: 18px;
-        font-size: clamp(2.7rem, 4vw, 4.3rem);
-        line-height: 0.95;
+        font-size: clamp(2.5rem, 4vw, 4rem);
+        line-height: 1;
+      }
+
+      .hero {
+        padding: 6px 0 34px;
       }
 
       .hero-copy {
-        margin-top: 18px;
-        max-width: 58ch;
+        margin: 12px 0 0;
         color: var(--muted);
-        font-size: 1.06rem;
-        line-height: 1.7;
-      }
-
-      .hero-actions {
-        display: flex;
-        gap: 14px;
-        flex-wrap: wrap;
-        margin-top: 26px;
+        font-size: 1rem;
       }
 
       .button,
@@ -130,40 +171,31 @@
         border: 1px solid var(--border);
       }
 
-      .stat-card {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 14px;
-        padding: 22px;
-      }
-
-      .stat {
-        padding: 18px;
-        border-radius: 20px;
-        background: var(--surface-strong);
-        border: 1px solid var(--border);
-      }
-
-      .stat-label {
-        color: var(--muted);
-        font-size: 0.92rem;
-      }
-
-      .stat-value {
-        margin-top: 10px;
-        font-family: Georgia, "Times New Roman", serif;
-        font-size: 2rem;
-      }
-
       .layout {
         display: grid;
-        grid-template-columns: 1.05fr 0.95fr;
+        grid-template-columns: minmax(340px, 0.9fr) minmax(420px, 1.1fr);
         gap: 24px;
-        margin-top: 24px;
+        align-items: start;
+        transition: grid-template-columns 520ms cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      .layout.has-nutrition {
+        grid-template-columns: minmax(300px, 0.78fr) minmax(500px, 1.55fr) minmax(260px, 0.68fr);
+      }
+
+      .planner-stack {
+        display: grid;
+        align-content: start;
+        gap: 20px;
       }
 
       .panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
         padding: 26px;
+        border-radius: 28px;
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(16px);
       }
 
       .panel-header {
@@ -172,12 +204,6 @@
         justify-content: space-between;
         gap: 16px;
         margin-bottom: 18px;
-      }
-
-      .panel-subtitle {
-        color: var(--muted);
-        font-size: 0.95rem;
-        line-height: 1.6;
       }
 
       .grid {
@@ -222,25 +248,24 @@
         resize: vertical;
       }
 
-      .hint {
-        margin-top: 8px;
-        color: var(--muted);
-        font-size: 0.84rem;
-        line-height: 1.5;
-      }
-
       .ingredient-builder {
-        padding: 16px;
-        border: 1px solid var(--border);
-        border-radius: 20px;
-        background: rgba(255, 255, 255, 0.52);
+        display: grid;
+        gap: 14px;
       }
 
       .ingredient-entry {
         display: grid;
-        grid-template-columns: minmax(0, 1.3fr) minmax(120px, 0.7fr) auto;
+        grid-template-columns: minmax(0, 1fr) auto;
         gap: 10px;
         align-items: end;
+      }
+
+      .ingredient-name-field {
+        grid-column: 1 / -1;
+      }
+
+      .amount-field {
+        min-width: 0;
       }
 
       .ingredient-entry label {
@@ -252,10 +277,19 @@
         min-height: 50px;
       }
 
+      .amount-controls {
+        display: grid;
+        grid-template-columns: minmax(82px, 0.65fr) minmax(150px, 1.35fr);
+        gap: 8px;
+      }
+
+      .free-text-amount[hidden] {
+        display: none;
+      }
+
       .ingredient-list {
         display: grid;
         gap: 10px;
-        margin-top: 14px;
       }
 
       .ingredient-row {
@@ -282,15 +316,21 @@
         color: #8f3b17;
       }
 
-      .empty-state {
-        padding: 12px 2px 2px;
-        color: var(--muted);
-        font-size: 0.88rem;
-      }
-
       .pantry-action {
         width: 100%;
-        text-align: left;
+      }
+
+      .pantry-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        min-height: 34px;
+        margin: 16px 0 0;
+      }
+
+      .pantry-summary-empty {
+        color: var(--muted);
+        font-size: 0.92rem;
       }
 
       .modal[hidden] {
@@ -309,10 +349,14 @@
 
       .modal-card {
         width: min(100%, 520px);
+        height: 510px;
         padding: 26px;
         border-radius: 24px;
         background: var(--surface-strong);
         box-shadow: var(--shadow);
+        display: grid;
+        grid-template-rows: auto auto 226px minmax(40px, 1fr) auto;
+        gap: 12px;
       }
 
       .modal-actions {
@@ -326,23 +370,25 @@
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
         gap: 10px;
-        margin-top: 16px;
       }
 
       .suggestion-list {
         display: grid;
-        margin-top: 8px;
+        align-content: start;
         overflow: hidden;
+        overflow-y: auto;
         border: 1px solid var(--border);
         border-radius: 14px;
         background: #fff;
       }
 
       .suggestion-list:empty {
-        display: none;
+        background: transparent;
+        border-color: transparent;
       }
 
       .suggestion-button {
+        min-height: 44px;
         padding: 11px 14px;
         border-radius: 0;
         background: transparent;
@@ -365,8 +411,7 @@
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
-        min-height: 40px;
-        margin-top: 18px;
+        align-content: start;
       }
 
       .pantry-chip {
@@ -434,6 +479,63 @@
         gap: 14px;
       }
 
+      .results-empty {
+        color: var(--muted);
+        line-height: 1.6;
+        padding: 8px 0 2px;
+      }
+
+      #result-details {
+        display: grid;
+        gap: 14px;
+      }
+
+      #result-details[hidden] {
+        display: none;
+      }
+
+      #result-details.is-revealing {
+        animation: content-rise 420ms 80ms both cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      #nutrition-panel.is-revealing {
+        animation: nutrition-arrive 560ms 120ms both cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      #nutrition-panel.is-revealing .metric {
+        animation: metric-settle 360ms both cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      #nutrition-panel.is-revealing .metric:nth-child(1) { animation-delay: 240ms; }
+      #nutrition-panel.is-revealing .metric:nth-child(2) { animation-delay: 300ms; }
+      #nutrition-panel.is-revealing .metric:nth-child(3) { animation-delay: 360ms; }
+      #nutrition-panel.is-revealing .metric:nth-child(4) { animation-delay: 420ms; }
+
+      @keyframes content-rise {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      @keyframes nutrition-arrive {
+        from { opacity: 0; transform: translateX(22px) scale(0.98); }
+        to { opacity: 1; transform: translateX(0) scale(1); }
+      }
+
+      @keyframes metric-settle {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .layout,
+        #result-details.is-revealing,
+        #nutrition-panel.is-revealing,
+        #nutrition-panel.is-revealing .metric {
+          animation: none;
+          transition: none;
+        }
+      }
+
       .result-card {
         border-radius: 22px;
         background: var(--surface-strong);
@@ -495,10 +597,27 @@
         font-size: 0.92rem;
       }
 
+      .step-list {
+        margin: 12px 0 0;
+        padding-left: 24px;
+        display: grid;
+        gap: 10px;
+        line-height: 1.55;
+      }
+
       .metric-row {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 12px;
+      }
+
+      #nutrition-panel .metric {
+        min-width: 0;
+        padding: 15px 14px;
+      }
+
+      #nutrition-panel .metric strong {
+        font-size: 1.5rem;
       }
 
       .metric {
@@ -515,26 +634,51 @@
         font-size: 1.6rem;
       }
 
-      .footer-note {
-        margin-top: 14px;
-        color: var(--muted);
-        font-size: 0.85rem;
+      @media (max-width: 1280px) {
+        .layout,
+        .layout.has-nutrition {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
       }
 
       @media (max-width: 920px) {
-        .hero,
+        .app-shell {
+          width: min(100% - 20px, 1120px);
+          grid-template-columns: 1fr;
+          gap: 12px;
+          padding-top: 20px;
+        }
+
+        .sidebar {
+          position: static;
+          grid-template-columns: auto 1fr auto;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .sidebar-nav {
+          grid-auto-flow: column;
+          justify-content: start;
+        }
+
+        .sidebar-pantry {
+          padding: 0;
+          border: 0;
+          background: transparent;
+        }
+
+        .sidebar-pantry h2,
+        .sidebar-pantry .pantry-summary {
+          display: none;
+        }
+
         .layout,
         .grid.two,
         .metric-row {
           grid-template-columns: 1fr;
         }
 
-        .page {
-          width: min(100% - 20px, 1120px);
-          padding-top: 20px;
-        }
-
-        .hero-card,
         .panel {
           padding: 20px;
         }
@@ -542,65 +686,51 @@
         .ingredient-entry {
           grid-template-columns: 1fr;
         }
+
+        .modal-card {
+          height: auto;
+          min-height: 510px;
+          grid-template-rows: auto auto 226px minmax(40px, 1fr) auto;
+        }
       }
     </style>
   </head>
   <body>
-    <main class="page">
-      <section class="hero">
-        <article class="hero-card">
-          <div class="eyebrow">LifeOS AI Demo</div>
-          <h1>Plan dinner with the backend you just built.</h1>
-          <p class="hero-copy">
-            This lightweight frontend talks directly to your FastAPI backend and lets you test both
-            the stable mock mode and the real LLM mode without touching cURL or Swagger every time.
-          </p>
-          <div class="hero-actions">
-            <a class="button button-primary" href="#planner">Open Meal Planner</a>
-            <a class="button button-secondary" href="/preferences">Your Preferences</a>
-            <a class="button button-secondary" href="/docs" target="_blank" rel="noreferrer">API Docs</a>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="/">LifeOS <span>Meal Planner</span></a>
+        <nav class="sidebar-nav" aria-label="Primary navigation">
+          <a href="#planner" aria-current="page">Planner</a>
+          <a href="/preferences">Profile</a>
+        </nav>
+        <section class="sidebar-pantry" aria-label="Pantry">
+          <div class="sidebar-pantry-header">
+            <h2>Pantry</h2>
+            <button class="button button-secondary" type="button" id="open-pantry">Edit</button>
           </div>
-        </article>
+          <div class="pantry-summary" id="pantry-summary"></div>
+        </section>
+      </aside>
 
-        <aside class="hero-card stat-card">
-          <div class="stat">
-            <div class="stat-label">Backend Status</div>
-            <div class="stat-value" id="health-status">Checking...</div>
-          </div>
-          <div class="stat">
-            <div class="stat-label">Planning Modes</div>
-            <div class="stat-value">2</div>
-          </div>
-          <div class="stat">
-            <div class="stat-label">Primary Endpoint</div>
-            <div class="stat-value">/meal-plan</div>
-          </div>
-          <div class="stat">
-            <div class="stat-label">Workflow</div>
-            <div class="stat-value">Frontend + API</div>
-          </div>
-        </aside>
+      <main class="page">
+
+      <section class="hero">
+        <h1>Cook with what you have.</h1>
+        <p class="hero-copy">Add ingredients, set your preferences, and get one clear dinner idea.</p>
       </section>
 
       <section class="layout" id="planner">
-        <section class="panel">
-          <div class="panel-header">
+        <div class="planner-stack">
+          <form id="meal-form" class="planner-stack">
+            <section class="panel">
+              <div class="panel-header">
+                <h2>Ingredients</h2>
+              </div>
             <div>
-              <h2>Meal Planner</h2>
-              <p class="panel-subtitle">
-                Enter a few ingredients, choose a planning mode, and let LifeOS AI return a
-                structured meal recommendation.
-              </p>
-            </div>
-          </div>
-
-          <form id="meal-form" class="grid">
-            <div>
-              <label>What ingredients do you have?</label>
               <div class="ingredient-builder">
                 <div class="ingredient-entry">
-                  <div>
-                    <label for="ingredient-search">Search or type an ingredient</label>
+                  <div class="ingredient-name-field">
+                    <label for="ingredient-search">Ingredient</label>
                     <input
                       id="ingredient-search"
                       type="text"
@@ -610,38 +740,45 @@
                     />
                     <datalist id="ingredient-options"></datalist>
                   </div>
-                  <div>
-                    <label for="ingredient-amount">Amount (optional)</label>
-                    <input id="ingredient-amount" type="text" placeholder="300g, 1pc, 1 egg, some" />
+                  <div class="amount-field">
+                    <label for="ingredient-quantity">Amount (optional)</label>
+                    <div class="amount-controls">
+                      <input id="ingredient-quantity" type="number" min="0" step="any" placeholder="300" />
+                      <select id="ingredient-unit" aria-label="Ingredient unit"></select>
+                    </div>
+                    <input
+                      id="free-text-amount"
+                      class="free-text-amount"
+                      type="text"
+                      placeholder="For example: a handful, half a bag"
+                      hidden
+                    />
                   </div>
                   <button class="button button-secondary" type="button" id="add-ingredient">
                     Add
                   </button>
                 </div>
                 <div class="ingredient-list" id="ingredient-list"></div>
-                <div class="empty-state" id="ingredient-empty">
-                  Add at least one ingredient. Exact amounts are helpful, but never required.
-                </div>
-              </div>
-              <div class="hint">
-                Nutrition guide: <code>300g</code>, <code>0.3kg</code>, and <code>2oz</code> use USDA data. <code>1pc</code>, <code>1 piece</code>, and <code>1 egg</code> are approximate only for specific foods. Informal amounts still help meal planning, but are not included in USDA totals.
               </div>
             </div>
+            </section>
 
-            <div>
-              <label for="planning-notes">What would you like?</label>
+            <section class="panel">
+              <div class="panel-header">
+                <h2>Meal preferences</h2>
+              </div>
+              <div>
+              <label for="planning-notes">Notes</label>
               <textarea
                 id="planning-notes"
-                placeholder="For example: high-protein dinner, low oil, avoid frying, gluten free, slightly spicy."
+                placeholder="High protein, low oil, gluten free..."
               ></textarea>
-              <div class="hint">Add goals, dietary needs, flavor preferences, or any other request in one place.</div>
-            </div>
+              </div>
 
-            <div class="grid two">
+              <div class="grid two">
               <div>
                 <label for="time-minutes">Time limit (optional)</label>
                 <input id="time-minutes" name="time_minutes" type="number" min="1" max="240" placeholder="For example: 25" />
-                <div class="hint">Leave blank when time is flexible.</div>
               </div>
               <div>
                 <label for="mode">Mode</label>
@@ -649,37 +786,27 @@
                   <option value="mock">mock</option>
                   <option value="llm">llm</option>
                 </select>
-                <div class="hint">Use `llm` when your OpenAI API key is configured locally.</div>
               </div>
-            </div>
-
-            <div>
-              <button class="button button-secondary pantry-action" type="button" id="open-pantry">
-                Manage pantry seasonings
-              </button>
-              <div class="hint">Saved locally and used as ingredients already available at home.</div>
-            </div>
-
-            <div class="actions">
-              <button class="button button-primary" type="submit">Generate Plan</button>
-              <button class="button button-secondary" type="button" id="sample-button">Load Vegetarian Sample</button>
-            </div>
+              </div>
+              <div class="actions">
+                <button class="button button-primary" type="submit">Generate Plan</button>
+              </div>
+            </section>
 
             <div id="status" class="status info"></div>
           </form>
-        </section>
+        </div>
 
         <section class="panel">
           <div class="panel-header">
             <div>
-              <h2>Response</h2>
-              <p class="panel-subtitle">
-                The frontend renders the same structured fields your backend returns to clients.
-              </p>
+              <h2>Recipe</h2>
             </div>
           </div>
 
           <div class="results">
+            <p class="results-empty" id="results-empty">Your meal plan will appear here.</p>
+            <div id="result-details" hidden>
             <article class="result-card">
               <div class="result-title">Meal Name</div>
               <div class="result-value" id="meal-name">No result yet.</div>
@@ -687,18 +814,8 @@
 
             <article class="result-card">
               <div class="result-title">Reasoning</div>
-              <div class="result-value" id="reasoning">
-                Submit the form to see how the planner explains its decision.
-              </div>
+              <div class="result-value" id="reasoning">Generate a plan to see the reasoning.</div>
             </article>
-            <article class="result-card">
-              <div class="result-title">Nutrition Data</div>
-              <div class="nutrition-status mock" id="nutrition-source">Awaiting a result</div>
-              <div class="nutrition-coverage" id="nutrition-coverage">
-                Submit the form to see which ingredients were included in the estimate.
-              </div>
-            </article>
-
             <article class="result-card">
               <div class="result-title">Ingredients To Use</div>
               <div class="chip-list" id="ingredients-to-use">
@@ -707,35 +824,45 @@
             </article>
 
             <article class="result-card">
-              <div class="result-title">Missing Items</div>
-              <div class="chip-list" id="missing-items">
-                <span class="chip">waiting for response</span>
-              </div>
+              <div class="result-title">Cooking Steps</div>
+              <ol class="step-list" id="cooking-steps"></ol>
             </article>
-
-            <div class="metric-row">
-              <article class="metric">
-                Estimated Protein
-                <strong id="estimated-protein">0 g</strong>
-              </article>
-              <article class="metric">
-                Estimated Calories
-                <strong id="estimated-calories">0 kcal</strong>
-              </article>
             </div>
           </div>
 
-          <p class="footer-note">
-            Tip: use `mock` for fast local demos and `llm` when you want a real model-generated recommendation.
-          </p>
+        </section>
+        <section class="panel" id="nutrition-panel" hidden>
+          <div class="panel-header">
+            <h2>Nutrition</h2>
+          </div>
+          <div class="metric-row">
+            <article class="metric">
+              Calories
+              <strong id="estimated-calories">0 kcal</strong>
+            </article>
+            <article class="metric">
+              Protein
+              <strong id="estimated-protein">0 g</strong>
+            </article>
+            <article class="metric">
+              Carbs
+              <strong id="estimated-carbs">0 g</strong>
+            </article>
+            <article class="metric">
+              Fat
+              <strong id="estimated-fat">0 g</strong>
+            </article>
+          </div>
+          <div class="nutrition-status mock" id="nutrition-source">Mock estimate</div>
+          <div class="nutrition-coverage" id="nutrition-coverage"></div>
         </section>
       </section>
-    </main>
+      </main>
+    </div>
 
     <div class="modal" id="pantry-modal" hidden>
       <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="pantry-title">
         <h2 id="pantry-title">Pantry seasonings</h2>
-        <p class="panel-subtitle">Add the seasonings you usually have. They are saved only in this browser.</p>
         <div class="pantry-entry">
           <input id="seasoning-search" type="text" placeholder="Search or add a seasoning" autocomplete="off" />
           <button class="button button-secondary" type="button" id="add-seasoning">Add</button>
@@ -759,6 +886,24 @@
         "avocado", "greek yogurt", "cheese", "milk", "oats"
       ];
 
+      const weightUnits = ["g", "kg", "oz", "lb", "free-text"];
+      const eggFoods = new Set(["egg", "eggs"]);
+      const pieceBasedFoods = new Set([
+        "chicken breast", "chicken thigh", "chicken wings", "salmon",
+        "potato", "sweet potato", "tomato", "cucumber", "bell pepper",
+        "carrot", "mushroom", "onion", "garlic", "avocado",
+      ]);
+
+      const unitLabels = {
+        g: "grams (g)",
+        kg: "kilograms (kg)",
+        oz: "ounces (oz)",
+        lb: "pounds (lb)",
+        piece: "pieces (approx.)",
+        egg: "large egg (approx.)",
+        "free-text": "Not sure / free-text",
+      };
+
       const seasoningCatalog = [
         "allspice", "basil", "bay leaves", "black pepper", "cayenne pepper",
         "chili flakes", "chili powder", "cinnamon", "coriander", "cumin",
@@ -771,26 +916,32 @@
       ];
 
       const mealForm = document.getElementById("meal-form");
-      const sampleButton = document.getElementById("sample-button");
       const statusBox = document.getElementById("status");
       const ingredientSearch = document.getElementById("ingredient-search");
-      const ingredientAmount = document.getElementById("ingredient-amount");
+      const ingredientQuantity = document.getElementById("ingredient-quantity");
+      const ingredientUnit = document.getElementById("ingredient-unit");
+      const freeTextAmount = document.getElementById("free-text-amount");
       const ingredientList = document.getElementById("ingredient-list");
-      const ingredientEmpty = document.getElementById("ingredient-empty");
       const seasoningSearch = document.getElementById("seasoning-search");
       const seasoningSuggestions = document.getElementById("seasoning-suggestions");
       const pantryChipList = document.getElementById("pantry-chip-list");
+      const pantrySummary = document.getElementById("pantry-summary");
       const pantryModal = document.getElementById("pantry-modal");
 
       const mealName = document.getElementById("meal-name");
       const reasoning = document.getElementById("reasoning");
       const ingredientsToUse = document.getElementById("ingredients-to-use");
-      const missingItems = document.getElementById("missing-items");
+      const cookingSteps = document.getElementById("cooking-steps");
       const estimatedProtein = document.getElementById("estimated-protein");
       const estimatedCalories = document.getElementById("estimated-calories");
+      const estimatedCarbs = document.getElementById("estimated-carbs");
+      const estimatedFat = document.getElementById("estimated-fat");
       const nutritionSource = document.getElementById("nutrition-source");
       const nutritionCoverage = document.getElementById("nutrition-coverage");
-      const healthStatus = document.getElementById("health-status");
+      const resultsEmpty = document.getElementById("results-empty");
+      const resultDetails = document.getElementById("result-details");
+      const nutritionPanel = document.getElementById("nutrition-panel");
+      const plannerLayout = document.getElementById("planner");
 
       let selectedIngredients = [];
       let savedSeasonings = [];
@@ -823,7 +974,6 @@
       }
 
       function renderIngredientList() {
-        ingredientEmpty.style.display = selectedIngredients.length ? "none" : "block";
         ingredientList.innerHTML = selectedIngredients.map((ingredient, index) => `
           <div class="ingredient-row">
             <span class="ingredient-name">${escapeHtml(ingredient.name)}${ingredient.amount ? ` · ${escapeHtml(ingredient.amount)}` : ""}</span>
@@ -832,9 +982,39 @@
         `).join("");
       }
 
+      function getUnitProfile(ingredientName) {
+        const normalizedName = ingredientName.trim().toLowerCase();
+        if (eggFoods.has(normalizedName)) {
+          return { units: ["g", "kg", "oz", "lb", "egg", "free-text"] };
+        }
+        if (pieceBasedFoods.has(normalizedName)) {
+          return { units: ["g", "kg", "oz", "lb", "piece", "free-text"] };
+        }
+        return { units: weightUnits };
+      }
+
+      function updateUnitOptions() {
+        const profile = getUnitProfile(ingredientSearch.value);
+        const currentUnit = ingredientUnit.value;
+        ingredientUnit.innerHTML = [
+          '<option value="">No amount</option>',
+          ...profile.units.map((unit) => `<option value="${unit}">${unitLabels[unit]}</option>`),
+        ].join("");
+
+        if (profile.units.includes(currentUnit)) {
+          ingredientUnit.value = currentUnit;
+        } else {
+          ingredientUnit.value = "";
+        }
+
+        freeTextAmount.hidden = ingredientUnit.value !== "free-text";
+      }
+
       function addIngredient() {
         const name = ingredientSearch.value.trim();
-        const amount = ingredientAmount.value.trim();
+        const quantity = ingredientQuantity.value.trim();
+        const unit = ingredientUnit.value;
+        const customAmount = freeTextAmount.value.trim();
 
         if (!name) {
           setStatus("Type or choose an ingredient first.", "error");
@@ -842,10 +1022,35 @@
           return;
         }
 
+        if (unit && unit !== "free-text" && !quantity) {
+          setStatus("Enter a number or choose No amount.", "error");
+          ingredientQuantity.focus();
+          return;
+        }
+
+        const allowsBareCount = ["egg", "eggs"].includes(name.toLowerCase());
+        if (quantity && !unit && !allowsBareCount) {
+          setStatus("Choose a unit or clear the number to use planning-only input.", "error");
+          ingredientUnit.focus();
+          return;
+        }
+
+        if (unit === "free-text" && !customAmount) {
+          setStatus("Describe the amount or choose No amount.", "error");
+          freeTextAmount.focus();
+          return;
+        }
+
+        const amount = unit === "free-text"
+          ? customAmount
+          : quantity && (unit || allowsBareCount) ? `${quantity}${unit}` : "";
+
         selectedIngredients.push({ name, amount });
         ingredientSearch.value = "";
-        ingredientAmount.value = "";
+        ingredientQuantity.value = "";
+        freeTextAmount.value = "";
         statusBox.className = "status info";
+        updateUnitOptions();
         renderIngredientList();
         ingredientSearch.focus();
       }
@@ -860,18 +1065,22 @@
           .join("");
       }
 
-      function fillSample() {
-        selectedIngredients = [
-          { name: "tofu", amount: "1 block" },
-          { name: "quinoa", amount: "1 small bowl" },
-          { name: "spinach", amount: "a handful" },
-          { name: "chickpeas", amount: "half a can" }
-        ];
-        renderIngredientList();
-        document.getElementById("planning-notes").value =
-          "Quick vegetarian lunch, high fiber, low oil, avoid frying.";
-        document.getElementById("time-minutes").value = "15";
-        document.getElementById("mode").value = "mock";
+      function renderSteps(steps) {
+        cookingSteps.innerHTML = steps
+          .map((step) => `<li>${escapeHtml(stripStepNumber(step))}</li>`)
+          .join("");
+      }
+
+      function stripStepNumber(step) {
+        let cleanStep = String(step || "").trim();
+        let previousStep;
+
+        do {
+          previousStep = cleanStep;
+          cleanStep = cleanStep.replace(/^(?:step\s*)?\d+\s*[.)-:]\s*/i, "");
+        } while (cleanStep !== previousStep);
+
+        return cleanStep;
       }
 
       function normalizeSeasoning(value) {
@@ -890,6 +1099,17 @@
             <button type="button" data-remove-seasoning="${index}" aria-label="Remove ${escapeHtml(seasoning)}">&times;</button>
           </span>
         `).join("");
+      }
+
+      function renderPantrySummary() {
+        if (!savedSeasonings.length) {
+          pantrySummary.innerHTML = '<span class="pantry-summary-empty">No seasonings saved.</span>';
+          return;
+        }
+
+        pantrySummary.innerHTML = savedSeasonings
+          .map((seasoning) => `<span class="chip">${escapeHtml(seasoning)}</span>`)
+          .join("");
       }
 
       function renderSeasoningSuggestions() {
@@ -967,17 +1187,8 @@
       function saveSeasonings() {
         savedSeasonings = [...pantryDraft];
         localStorage.setItem("lifeos-seasonings", JSON.stringify(savedSeasonings));
+        renderPantrySummary();
         closePantry();
-      }
-
-      async function checkHealth() {
-        try {
-          const response = await fetch("/health");
-          const data = await response.json();
-          healthStatus.textContent = data.status === "ok" ? "Healthy" : "Unknown";
-        } catch (error) {
-          healthStatus.textContent = "Offline";
-        }
       }
 
       document.getElementById("add-ingredient").addEventListener("click", addIngredient);
@@ -987,7 +1198,18 @@
           addIngredient();
         }
       });
-      ingredientAmount.addEventListener("keydown", (event) => {
+      ingredientQuantity.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          addIngredient();
+        }
+      });
+      ingredientSearch.addEventListener("input", updateUnitOptions);
+      ingredientUnit.addEventListener("change", () => {
+        freeTextAmount.hidden = ingredientUnit.value !== "free-text";
+        if (ingredientUnit.value === "free-text") freeTextAmount.focus();
+      });
+      freeTextAmount.addEventListener("keydown", (event) => {
         if (event.key === "Enter") {
           event.preventDefault();
           addIngredient();
@@ -1030,6 +1252,14 @@
       mealForm.addEventListener("submit", async (event) => {
         event.preventDefault();
 
+        if (window.location.protocol === "file:") {
+          setStatus(
+            "Open http://127.0.0.1:8000/ instead of the local HTML file to generate a plan.",
+            "error"
+          );
+          return;
+        }
+
         if (!selectedIngredients.length) {
           setStatus("Add at least one ingredient before generating a plan.", "error");
           ingredientSearch.focus();
@@ -1066,26 +1296,40 @@
             throw new Error(detail);
           }
 
+          resultsEmpty.hidden = true;
+          resultDetails.hidden = false;
+          nutritionPanel.hidden = false;
+          plannerLayout.classList.add("has-nutrition");
+          resultDetails.classList.remove("is-revealing");
+          nutritionPanel.classList.remove("is-revealing");
+          void nutritionPanel.offsetWidth;
+          resultDetails.classList.add("is-revealing");
+          nutritionPanel.classList.add("is-revealing");
           mealName.textContent = data.meal_name;
           reasoning.textContent = data.reasoning;
           renderChips(ingredientsToUse, data.ingredients_to_use);
-          renderChips(missingItems, data.missing_items);
+          renderSteps(data.steps);
           estimatedProtein.textContent = `${data.estimated_protein} g`;
           estimatedCalories.textContent = `${data.estimated_calories} kcal`;
+          estimatedCarbs.textContent = `${data.estimated_carbs} g`;
+          estimatedFat.textContent = `${data.estimated_fat} g`;
           const usesUsda = data.nutrition_source === "USDA FoodData Central";
           nutritionSource.textContent = usesUsda ? "USDA FoodData Central" : "Mock estimate";
           nutritionSource.className = `nutrition-status ${usesUsda ? "usda" : "mock"}`;
           nutritionCoverage.textContent = data.nutrition_coverage;
           setStatus(`Meal plan ready using ${mode} mode.`, "info");
         } catch (error) {
-          setStatus(error.message || "Something went wrong while creating the meal plan.", "error");
+          const message = error.message === "Failed to fetch"
+            ? "Could not reach the local API. Check that http://127.0.0.1:8000/ is open and the server is running."
+            : error.message || "Something went wrong while creating the meal plan.";
+          setStatus(message, "error");
         }
       });
 
-      sampleButton.addEventListener("click", fillSample);
       loadSeasonings();
+      updateUnitOptions();
       renderIngredientList();
-      checkHealth();
+      renderPantrySummary();
     </script>
   </body>
 </html>

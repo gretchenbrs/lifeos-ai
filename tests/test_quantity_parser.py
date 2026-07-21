@@ -34,6 +34,15 @@ class QuantityParserTests(unittest.TestCase):
         assert parsed is not None
         self.assertEqual(parsed.unit, "piece")
 
+    def test_accepts_a_bare_count_for_eggs_only(self) -> None:
+        parsed = self.parser.parse_ingredient("eggs (1)")
+
+        self.assertIsNotNone(parsed)
+        assert parsed is not None
+        self.assertEqual(parsed.unit, "piece")
+        self.assertEqual(parsed.quantity, 1)
+        self.assertIsNone(self.parser.parse_ingredient("rice (1)"))
+
     def test_rejects_ambiguous_single_letter_unit(self) -> None:
         self.assertIsNone(self.parser.parse_ingredient("egg (1p)"))
 

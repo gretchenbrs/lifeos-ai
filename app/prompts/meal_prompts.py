@@ -50,9 +50,15 @@ def build_meal_llm_messages(request: MealPlanRequest) -> List[Dict[str, str]]:
         "Treat the user's planning notes as goals and constraints. "
         "Do not assume every ingredient must be used; choose the best subset for the request. "
         "Only treat listed seasonings as already available. "
+        "Do not recommend or require ingredients that are not listed. "
+        "Return ingredients_to_use using the original ingredient strings exactly as provided, "
+        "and do not include seasonings in that field. "
         "Keep the answer realistic, concise, and beginner-friendly. "
-        "Return estimated_protein and estimated_calories as rough integer estimates. "
-        "Only include missing_items that are actually helpful."
+        "Return 4 to 6 concrete cooking steps as plain text strings without numbers, bullets, "
+        "or labels such as 'Step 1'; the client will add the numbering. "
+        "Include useful sequence, heat, time, and only the most relevant available seasonings. "
+        "Return rough integer nutrition estimates for protein, "
+        "calories, carbohydrates, and fat."
     )
 
     user_prompt = (
@@ -73,7 +79,6 @@ def build_meal_reasoning(
     planning_notes: str,
     time_minutes: Optional[int],
     ingredients_to_use: List[str],
-    missing_items: List[str],
     available_seasonings: Optional[List[str]] = None,
     profile: Optional[UserProfile] = None,
 ) -> str:
@@ -94,10 +99,5 @@ def build_meal_reasoning(
 
     if available_seasonings:
         parts.append(f"It can use your saved seasonings: {', '.join(available_seasonings)}.")
-
-    if missing_items:
-        parts.append(
-            f"You could improve flavor or flexibility with: {', '.join(missing_items)}."
-        )
 
     return " ".join(parts)

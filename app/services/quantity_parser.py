@@ -11,6 +11,7 @@ INGREDIENT_AMOUNT_PATTERN = re.compile(
 NUMBER_UNIT_PATTERN = re.compile(
     r"^\s*(?P<quantity>\d+(?:\.\d+)?)\s*(?P<unit>[a-zA-Z]+)\s*$"
 )
+NUMBER_PATTERN = re.compile(r"^\s*(?P<quantity>\d+(?:\.\d+)?)\s*$")
 
 
 @dataclass(frozen=True)
@@ -76,6 +77,8 @@ class QuantityParser:
         "pound": 453.592,
     }
 
+    natural_count_foods = {"egg", "eggs"}
+
     def parse_ingredient(self, ingredient: str) -> Optional[ParsedIngredientAmount]:
         """Parses strings such as ``egg (1 pc)`` without guessing ambiguous units."""
 
@@ -84,9 +87,21 @@ class QuantityParser:
             return None
 
         name = ingredient_match.group("name").strip()
-        amount_match = NUMBER_UNIT_PATTERN.match(ingredient_match.group("amount"))
-        if not name or amount_match is None:
+        raw_amount = ingredient_match.group("amount")
+        amount_match = NUMBER_UNIT_PATTERN.match(raw_amount)
+        if not name:
             return None
+
+        if amount_match is None:
+            bare_number_match = NUMBER_PATTERN.match(raw_amount)
+            if name.lower() not in self.natural_count_foods or bare_number_match is None:
+                return None
+            return ParsedIngredientAmount(
+                name=name,
+                quantity=float(bare_number_match.group("quantity")),
+                unit="piece",
+                grams=None,
+            )
 
         quantity = float(amount_match.group("quantity"))
         raw_unit = amount_match.group("unit").lower()

@@ -1,3 +1,4 @@
+import re
 from typing import Dict, List
 
 from app.prompts.meal_prompts import build_meal_reasoning
@@ -24,14 +25,50 @@ class MealPlanningService:
         else:
             meal_plan = self.mock_service.create_meal_plan(request)
 
-        nutrition_estimate = self.nutrition_service.estimate(request.ingredients)
+        nutrition_ingredients = self._nutrition_ingredients(
+            request.ingredients,
+            meal_plan.ingredients_to_use,
+        )
+        nutrition_estimate = self.nutrition_service.estimate(nutrition_ingredients)
         if nutrition_estimate is not None:
             meal_plan.estimated_protein = nutrition_estimate.protein_grams
             meal_plan.estimated_calories = nutrition_estimate.calories
+            meal_plan.estimated_carbs = nutrition_estimate.carbs_grams
+            meal_plan.estimated_fat = nutrition_estimate.fat_grams
             meal_plan.nutrition_source = "USDA FoodData Central"
             meal_plan.nutrition_coverage = nutrition_estimate.coverage
 
         return meal_plan
+
+    def _nutrition_ingredients(
+        self,
+        requested_ingredients: List[str],
+        selected_ingredients: List[str],
+    ) -> List[str]:
+        """Restores original amounts when an LLM rewrites ingredient display text."""
+
+        selected_names = {
+            self._ingredient_name_for_matching(ingredient)
+            for ingredient in selected_ingredients
+        }
+        return [
+            ingredient
+            for ingredient in requested_ingredients
+            if self._ingredient_name_for_matching(ingredient) in selected_names
+        ]
+
+    def _ingredient_name_for_matching(self, ingredient: str) -> str:
+        parsed = self.nutrition_service.quantity_parser.parse_ingredient(ingredient)
+        if parsed is not None:
+            return parsed.name.strip().lower()
+
+        # LLMs may write "rice 150g, assumed cooked" instead of "rice (150g)".
+        before_note = ingredient.split(",", 1)[0].strip().lower()
+        return re.sub(
+            r"\s+\d+(?:\.\d+)?\s*(?:g|kg|oz|lb|pc|pcs|piece|pieces|egg|eggs)\b.*$",
+            "",
+            before_note,
+        ).strip()
 
 
 class MockMealPlanningService:
@@ -91,6 +128,35 @@ class MockMealPlanningService:
         "avocado": 160,
     }
 
+    carbohydrate_estimates: Dict[str, int] = {
+        "tofu": 3,
+        "eggs": 1,
+        "egg": 0,
+        "beans": 22,
+        "lentils": 20,
+        "rice": 45,
+        "pasta": 42,
+        "quinoa": 39,
+        "broccoli": 11,
+        "spinach": 4,
+        "bell pepper": 6,
+        "tomato": 5,
+        "avocado": 9,
+    }
+
+    fat_estimates: Dict[str, int] = {
+        "chicken": 4,
+        "turkey": 4,
+        "beef": 15,
+        "salmon": 13,
+        "tuna": 1,
+        "tofu": 7,
+        "eggs": 10,
+        "egg": 5,
+        "greek yogurt": 3,
+        "avocado": 15,
+    }
+
     def create_meal_plan(self, request: MealPlanRequest) -> MealPlanResponse:
         normalized_ingredients = [ingredient.strip() for ingredient in request.ingredients]
         lower_ingredients = [ingredient.lower() for ingredient in normalized_ingredients]
@@ -105,12 +171,6 @@ class MockMealPlanningService:
         )
         lower_selected_ingredients = [ingredient.lower() for ingredient in ingredients_to_use]
         meal_name = self._build_meal_name(lower_selected_ingredients)
-        lower_seasonings = [item.lower() for item in request.available_seasonings]
-        missing_items = self._suggest_missing_items(
-            lower_ingredients + lower_seasonings,
-            planning_context,
-        )
-
         estimated_protein = self._estimate_total(
             lower_selected_ingredients,
             self.protein_estimates,
@@ -118,6 +178,14 @@ class MockMealPlanningService:
         estimated_calories = self._estimate_total(
             lower_selected_ingredients,
             self.calorie_estimates,
+        )
+        estimated_carbs = self._estimate_total(
+            lower_selected_ingredients,
+            self.carbohydrate_estimates,
+        )
+        estimated_fat = self._estimate_total(
+            lower_selected_ingredients,
+            self.fat_estimates,
         )
 
         if estimated_protein == 0:
@@ -129,7 +197,6 @@ class MockMealPlanningService:
             planning_notes=request.planning_notes,
             time_minutes=request.time_minutes,
             ingredients_to_use=ingredients_to_use,
-            missing_items=missing_items,
             available_seasonings=request.available_seasonings,
             profile=request.profile,
         )
@@ -138,9 +205,11 @@ class MockMealPlanningService:
             meal_name=meal_name,
             reasoning=reasoning,
             ingredients_to_use=ingredients_to_use,
-            missing_items=missing_items,
+            steps=self._build_steps(ingredients_to_use, request.available_seasonings),
             estimated_protein=estimated_protein,
             estimated_calories=estimated_calories,
+            estimated_carbs=estimated_carbs,
+            estimated_fat=estimated_fat,
         )
 
     def _build_meal_name(self, ingredients: List[str]) -> str:
@@ -179,35 +248,23 @@ class MockMealPlanningService:
         selected_indexes = (protein_indexes + other_indexes)[:5]
         return [ingredients[index] for index in selected_indexes]
 
-    def _suggest_missing_items(
+    def _build_steps(
         self,
         ingredients: List[str],
-        planning_notes: str,
+        available_seasonings: List[str],
     ) -> List[str]:
-        suggestions = []
-
-        needs_high_protein = self._needs_high_protein(planning_notes)
-        has_protein = any(
-            keyword in ingredient
-            for ingredient in ingredients
-            for keyword in self.protein_keywords
+        ingredient_list = ", ".join(ingredients)
+        seasoning_step = (
+            f"Season with {', '.join(available_seasonings)} to taste."
+            if available_seasonings
+            else "Finish cooking, taste, and serve."
         )
-        if needs_high_protein and not has_protein:
-            suggestions.append("protein source such as chicken, tofu, eggs, or beans")
-
-        if not any("garlic" in ingredient or "onion" in ingredient for ingredient in ingredients):
-            suggestions.append("garlic or onion")
-        if not any("olive oil" in ingredient or "oil" in ingredient for ingredient in ingredients):
-            suggestions.append("olive oil")
-        if not any(
-            "salt" in ingredient
-            or "pepper" in ingredient
-            or "seasoning" in ingredient
-            for ingredient in ingredients
-        ):
-            suggestions.append("basic seasoning")
-
-        return suggestions
+        return [
+            f"Prepare the ingredients: {ingredient_list}.",
+            "Cook the main ingredients until heated through and tender.",
+            seasoning_step,
+            "Combine, taste, and serve.",
+        ]
 
     def _needs_high_protein(self, planning_notes: str) -> bool:
         context = planning_notes.lower()

@@ -72,9 +72,11 @@ class MealPlanResponse(BaseModel):
     meal_name: str
     reasoning: str
     ingredients_to_use: List[str]
-    missing_items: List[str]
+    steps: List[str]
     estimated_protein: int
     estimated_calories: int
+    estimated_carbs: int
+    estimated_fat: int
     nutrition_source: str = "Mock estimate"
     nutrition_coverage: str = (
         "Estimated from ingredient names because USDA nutrition needs exact grams or a "

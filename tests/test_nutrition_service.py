@@ -19,24 +19,30 @@ class USDANutritionServiceTests(unittest.TestCase):
             "foodNutrients": [
                 {"nutrientName": "Protein", "unitName": "G", "value": 19.0},
                 {"nutrientName": "Energy", "unitName": "KCAL", "value": 100.0},
+                {"nutrientName": "Carbohydrate, by difference", "unitName": "G", "value": 6.0},
+                {"nutrientName": "Total lipid (fat)", "unitName": "G", "value": 4.0},
             ]
         }
 
         nutrients = self.service._extract_nutrients(food)
 
-        self.assertEqual(nutrients, {"protein": 19.0, "calories": 100.0})
+        self.assertEqual(
+            nutrients,
+            {"protein": 19.0, "calories": 100.0, "carbohydrates": 6.0, "fat": 4.0},
+        )
 
     def test_kilojoules_are_not_treated_as_calories(self) -> None:
         food = {
             "foodNutrients": [
                 {"nutrientName": "Protein", "unitName": "G", "value": 19.0},
                 {"nutrientName": "Energy", "unitName": "KJ", "value": 900.0},
+                {"nutrientName": "Carbohydrate, by difference", "unitName": "G", "value": 6.0},
             ]
         }
 
         nutrients = self.service._extract_nutrients(food)
 
-        self.assertEqual(nutrients, {"protein": 19.0})
+        self.assertEqual(nutrients, {"protein": 19.0, "carbohydrates": 6.0})
 
     def test_multiple_ingredients_keep_search_fallback_and_canonical_foods(self) -> None:
         tuna_search_food = {
@@ -45,6 +51,8 @@ class USDANutritionServiceTests(unittest.TestCase):
             "foodNutrients": [
                 {"nutrientName": "Protein", "unitName": "G", "value": 19.4},
                 {"nutrientName": "Energy", "unitName": "KCAL", "value": 90.0},
+                {"nutrientName": "Carbohydrate, by difference", "unitName": "G", "value": 0.0},
+                {"nutrientName": "Total lipid (fat)", "unitName": "G", "value": 1.0},
             ],
         }
         beef_food = self.service.canonical_foods["beef"]
@@ -65,8 +73,8 @@ class USDANutritionServiceTests(unittest.TestCase):
                 "_get_nutrients",
                 side_effect=[
                     None,
-                    {"protein": 17.32, "calories": 291.0},
-                    {"protein": 1.0, "calories": 17.0},
+                    {"protein": 17.32, "calories": 291.0, "carbohydrates": 0.0, "fat": 21.0},
+                    {"protein": 1.0, "calories": 17.0, "carbohydrates": 3.0, "fat": 0.0},
                 ],
             ),
         ):
@@ -78,6 +86,8 @@ class USDANutritionServiceTests(unittest.TestCase):
         assert estimate is not None
         self.assertEqual(estimate.protein_grams, 109)
         self.assertEqual(estimate.calories, 1361)
+        self.assertEqual(estimate.carbs_grams, 3)
+        self.assertEqual(estimate.fat_grams, 86)
         self.assertIn("tuna (200g", estimate.coverage)
         self.assertIn("beef (400g", estimate.coverage)
         self.assertIn("lettuce (100g", estimate.coverage)

@@ -1,4 +1,5 @@
 import os
+import re
 from typing import Optional
 
 from app.prompts.meal_prompts import build_meal_llm_messages
@@ -33,7 +34,32 @@ class LLMMealPlanningService:
         if parsed_response is None:
             raise RuntimeError("The model response could not be parsed into the meal plan schema.")
 
+        parsed_response.steps = self._normalize_steps(parsed_response.steps)
         return parsed_response
+
+    @staticmethod
+    def _normalize_steps(steps: list[str]) -> list[str]:
+        """Removes model-provided numbering because clients render an ordered list."""
+
+        normalized_steps = []
+        for step in steps:
+            clean_step = step.strip()
+            # A few models still add labels despite the structured-output instruction.
+            while True:
+                without_prefix = re.sub(
+                    r"^(?:step\s*)?\d+\s*[.)-:]\s*",
+                    "",
+                    clean_step,
+                    flags=re.IGNORECASE,
+                )
+                if without_prefix == clean_step:
+                    break
+                clean_step = without_prefix
+
+            if clean_step:
+                normalized_steps.append(clean_step)
+
+        return normalized_steps
 
     def _validate_api_key(self, api_key: Optional[str]) -> None:
         if not api_key:

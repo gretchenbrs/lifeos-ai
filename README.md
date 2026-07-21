@@ -205,11 +205,13 @@ Example response:
 ```json
 {
   "meal_name": "Chicken Nourish Bowl",
-  "reasoning": "This mock plan uses ingredients you already have: chicken breast, rice, broccoli. It considers your request: High-protein dinner, gluten free, low oil. It is designed to fit within about 25 minutes. You could improve flavor or flexibility with: garlic or onion, olive oil, basic seasoning.",
+  "reasoning": "This mock plan uses ingredients you already have: chicken breast, rice, broccoli. It considers your request: High-protein dinner, gluten free, low oil. It is designed to fit within about 25 minutes.",
   "ingredients_to_use": ["chicken breast", "rice", "broccoli"],
-  "missing_items": ["garlic or onion", "olive oil", "basic seasoning"],
+  "steps": ["Prepare the ingredients.", "Cook until tender.", "Season to taste.", "Serve."],
   "estimated_protein": 35,
-  "estimated_calories": 425
+  "estimated_calories": 425,
+  "estimated_carbs": 45,
+  "estimated_fat": 8
 }
 ```
 

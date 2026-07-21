@@ -18,6 +18,8 @@ FDC_BASE_URL = "https://api.nal.usda.gov/fdc/v1"
 class NutritionEstimate:
     protein_grams: int
     calories: int
+    carbs_grams: int
+    fat_grams: int
     coverage: str
 
 
@@ -57,6 +59,7 @@ class USDANutritionService:
 
     ambiguous_piece_foods = {"chicken", "beef"}
     preferred_portion_modifiers = {"egg": "large"}
+    canonical_food_aliases = {"eggs": "egg"}
 
     def __init__(self) -> None:
         self.quantity_parser = QuantityParser()
@@ -70,45 +73,56 @@ class USDANutritionService:
 
         protein_total = 0.0
         calorie_total = 0.0
+        carbohydrate_total = 0.0
+        fat_total = 0.0
         covered_items: list[str] = []
+        omitted_items: list[str] = []
 
         for ingredient in ingredients:
             parsed_ingredient = self.quantity_parser.parse_ingredient(ingredient)
             if parsed_ingredient is None:
+                omitted_items.append(f"{ingredient} (amount was not recognized)")
                 continue
 
             food_name = parsed_ingredient.name
             amount = parsed_ingredient.quantity
             unit = parsed_ingredient.unit
             if unit not in {"gram", "piece"}:
+                omitted_items.append(f"{ingredient} (unit is not supported for USDA totals)")
                 continue
 
             food = self._find_best_food(food_name, api_key)
             if food is None:
+                omitted_items.append(f"{ingredient} (no USDA match found)")
                 continue
 
             # A count of a broad food such as "chicken" does not identify a
             # consistent piece size. Keep the source mapping stable, but do not
             # invent a gram weight for that amount.
-            if unit == "piece" and food_name.strip().lower() in self.ambiguous_piece_foods:
+            canonical_name = self._canonical_food_name(food_name)
+            if unit == "piece" and canonical_name in self.ambiguous_piece_foods:
+                omitted_items.append(f"{ingredient} (food is too broad for a piece estimate)")
                 continue
 
-            nutrients = self._get_nutrients(food["fdcId"], api_key, food_name)
+            nutrients = self._get_nutrients(food["fdcId"], api_key, canonical_name)
             if not self._has_core_nutrients(nutrients):
                 # Some USDA search records cannot be retrieved from the detail
                 # endpoint, even though the search response includes nutrients.
                 nutrients = self._extract_nutrients(food)
             if nutrients is None:
+                omitted_items.append(f"{ingredient} (USDA nutrients were unavailable)")
                 continue
 
             protein_per_100g = nutrients.get("protein")
             calories_per_100g = nutrients.get("calories")
             if protein_per_100g is None or calories_per_100g is None:
+                omitted_items.append(f"{ingredient} (USDA nutrients were incomplete)")
                 continue
 
             if unit == "piece":
                 reference_portion_grams = nutrients.get("reference_portion_grams")
                 if reference_portion_grams is None:
+                    omitted_items.append(f"{ingredient} (no USDA reference portion was available)")
                     continue
                 grams = amount * reference_portion_grams
                 piece_label = "piece" if amount == 1 else "pieces"
@@ -120,6 +134,7 @@ class USDANutritionService:
             else:
                 grams = parsed_ingredient.grams
                 if grams is None:
+                    omitted_items.append(f"{ingredient} (could not convert amount to grams)")
                     continue
                 coverage_item = (
                     f"{food_name} ({grams:g}g; USDA match: {food['description']})"
@@ -128,6 +143,8 @@ class USDANutritionService:
             multiplier = grams / 100
             protein_total += protein_per_100g * multiplier
             calorie_total += calories_per_100g * multiplier
+            carbohydrate_total += nutrients.get("carbohydrates", 0) * multiplier
+            fat_total += nutrients.get("fat", 0) * multiplier
             covered_items.append(coverage_item)
 
         if not covered_items:
@@ -138,14 +155,18 @@ class USDANutritionService:
             + ", ".join(covered_items)
             + ". Piece-based amounts are approximate; other informal amounts are not included."
         )
+        if omitted_items:
+            coverage += " Not included: " + ", ".join(omitted_items) + "."
         return NutritionEstimate(
             protein_grams=round(protein_total),
             calories=round(calorie_total),
+            carbs_grams=round(carbohydrate_total),
+            fat_grams=round(fat_total),
             coverage=coverage,
         )
 
     def _find_best_food(self, food_name: str, api_key: str) -> Optional[dict[str, Any]]:
-        canonical_food = self.canonical_foods.get(food_name.strip().lower())
+        canonical_food = self.canonical_foods.get(self._canonical_food_name(food_name))
         if canonical_food is not None:
             return canonical_food
 
@@ -167,6 +188,10 @@ class USDANutritionService:
             candidates,
             key=lambda food: (self._score_food(food, food_name), -int(food["fdcId"])),
         )
+
+    def _canonical_food_name(self, food_name: str) -> str:
+        normalized_name = food_name.strip().lower()
+        return self.canonical_food_aliases.get(normalized_name, normalized_name)
 
     def _score_food(self, food: dict[str, Any], query: str) -> int:
         """Favor plain, raw Foundation or SR Legacy foods over processed variants."""
@@ -230,6 +255,10 @@ class USDANutritionService:
 
             if name == "Protein":
                 nutrients["protein"] = float(amount)
+            elif name == "Carbohydrate, by difference":
+                nutrients["carbohydrates"] = float(amount)
+            elif name == "Total lipid (fat)":
+                nutrients["fat"] = float(amount)
             elif (
                 name in {"Energy", "Energy (Atwater General Factors)"}
                 and unit_name.lower() == "kcal"
